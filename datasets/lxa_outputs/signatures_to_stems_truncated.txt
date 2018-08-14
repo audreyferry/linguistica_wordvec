@@ -1,0 +1,369 @@
+Time: 2018-08-14 00:10:33
+Path of this file: /Users/audrey/GitProjects_2016/Projects/DeveloperVersion/lxa5/linguistica_wordvec/datasets/lxa_outputs/signatures_to_stems_truncated.txt
+
+System info:
+=============================================
+System: Darwin
+Node: audreyxvi.local
+Release: 17.5.0
+Version: Darwin Kernel Version 17.5.0: Mon Mar  5 22:24:32 PST 2018; root:xnu-4570.51.1~1/RELEASE_X86_64
+Machine: x86_64
+Processor: i386
+Python version: 3.5.2
+
+Packages:
+=============================================
+Linguistica 5.1.0-dev
+SciPy 0.19.1
+NumPy 1.13.1
+NetworkX 1.11
+
+Linguistica parameters:
+=============================================
+{'keep_case': 0,
+ 'max_affix_length': 4,
+ 'max_word_tokens': 0,
+ 'max_word_types': 7000,
+ 'min_context_count': 3,
+ 'min_sig_count': 5,
+ 'min_stem_length': 4,
+ 'n_eigenvectors': 6,
+ 'n_neighbors': 9,
+ 'suffixing': 1}
+
+Input file information:
+=============================================
+Path: /Users/audrey/GitProjects_2016/Projects/DeveloperVersion/lxa5/linguistica_wordvec/datasets/english-brown.txt
+Number of word types: 48781
+Number of word tokens: 1145632
+
+Results:
+=============================================
+Signatures to stems (first 10 stems for each sig)
+
+\begin{tabular}{llll}
+\toprule
+Index      & Signature                      & Stem count      & 1st 10 stems \\
+\midrule
+1          & NULL/s                         & 2327            & 1970 2-year-old 45-degree 90-degree abbreviation abernathy aberration abide abolitionist aborigine \\
+2          & 's/NULL                        & 813             & 1700 1800 1840 1850 1860 1870 1900 1961 abbas acheson \\
+3          & NULL/ly                        & 587             & abnormal absent-minded abundant accidental according accurate accusing acoustical actuarial acute \\
+4          & NULL/d/s                       & 346             & abuse accentuate accommodate accumulate accuse acquire adore advocate aerate aggravate \\
+5          & NULL/d                         & 314             & accede accelerate activate actuate agitate allocate animate apologize arbitrate articulate \\
+6          & ed/ing                         & 197             & accost adjudg admonish air-condition allott appall arraign bawl bedd bewitch \\
+7          & '/NULL                         & 190             & achaeans adventists allstates angeles arabs architects arkansas artists assessors athletes \\
+8          & 's/NULL/s                      & 181             & 1890 1920 1930 1940 1950 1960 actor adolescent afternoon agent \\
+9          & d/s                            & 175             & accompanie accomplishe accrue affiliate agonize allie allude ambushe analyse anybody' \\
+10         & ies/y                          & 173             & abilit absurdit accessor activit actualit adversar affinit agenc alleghen ambiguit \\
+11         & NULL/ed/ing/s                  & 151             & abound administer affirm afford amount appeal arrest assault attempt await \\
+12         & NULL/ed                        & 134             & abolish affix alligator anger anguish apparel apprehend array assent bait \\
+13         & NULL/ed/ing                    & 130             & affront applaud ascend assay astound attest augment avert banter belch \\
+14         & e/ed/es/ing                    & 130             & accus achiev acquir advanc advocat assum authoriz averag balanc bandag \\
+15         & NULL/ing                       & 105             & abstain accompany amass amplify apply backstitch beautify breach brows bully \\
+16         & d/r                            & 98              & amble betraye blackmaile blunte boarde booste borrowe broile buste charme \\
+17         & e/y                            & 95              & admirabl agreeabl amicabl appreciabl audibl believabl capabl charitabl clemenc comfortabl \\
+18         & e/ed/ing                       & 88              & appeas beguil blam bulg categoriz chid chok constru contriv convinc \\
+19         & ng/on                          & 85              & accumulati activati adopti agglutinati agitati alleviati basti circulati co-ordinati conjugati \\
+20         & NULL/ed/s                      & 82              & acclaim adorn benefit blanket blister blossom breakfast breast caution chamber \\
+21         & NULL/ly/ness                   & 74              & abrupt aggressive artful awful awkward bland brazen careful careless cheerful \\
+22         & '/g                            & 72              & appearin askin becomin bustlin buyin callin chargin checkin colorin confusin \\
+23         & d/r/rs                         & 66              & adapte amplifie banke banne boile booke bumpe calle campe choreographe \\
+24         & NULL/es                        & 63              & actress andrus appendix bias bich birch blemish blitz buffalo burgess \\
+25         & NULL/ness                      & 60              & abstracted adroit agreeable alone aloof amateurish assertive astute aware brash \\
+26         & ng/on/ons                      & 57              & accelerati accommodati anticipati appropriati auditi calculati calibrati celebrati compensati completi \\
+27         & NULL/e                         & 51              & abroad agnes away barrett born brawl broom chines choral clair \\
+28         & NULL/ally                      & 47              & algebraic apologetic aristocratic artistic asymmetric asymptotic automatic catastrophic diametric dogmatic \\
+29         & NULL/y                         & 46              & abbe baker blake braver butter carne conciliator connall connell copper \\
+30         & d/rs                           & 46              & backe bleache blinke bugge canvasse classifie corke cracke despoile downe \\
+31         & ed/ion                         & 44              & ablat acculturat amalgamat assassinat capitulat collat contort deactivat degenerat dehydrat \\
+32         & 's/NULL/s/s'                   & 43              & assessor athlete beginner bomber builder burnside buyer carpenter client composer \\
+33         & ce/t                           & 43              & affluen ambivalen benevolen clairvoyan coexisten cognizan coheren complaisan concordan congruen \\
+34         & e/ing                          & 41              & allur aveng balkaniz blockad capitaliz chaf corrod diddl disprov economiz \\
+35         & NULL/ing/s                     & 40              & audition balloon bargain bend bleat bluff bring burst caper carload \\
+36         & NULL/ly/s                      & 40              & active alternative anatomical ancient chemical compact compulsive current diagonal elder \\
+37         & NULL/al/s                      & 39              & baptism civilization communication composition computation conformation congregation consonant constitution construction \\
+38         & NULL/n                         & 36              & alai algeria alto australia austria chose colombia crimea dora formosa \\
+39         & an/en                          & 33              & adri alderm boatm businessm chairm coachm committeem countrym doorm englishm \\
+40         & r/st                           & 33              & bigge bolde deare dete earlie easie farthe franke fulle funnie \\
+41         & NULL/al                        & 31              & allegoric alphabetic anarchic arithmetic asteroid autobiographic autumn bronchi cosmic cross-section \\
+42         & ce/t/tly                       & 30              & abundan arrogan belligeren brillian concurren defian diligen dominan eloquen eminen \\
+43         & NULL/s/s'                      & 28              & beadle candidate cowbird cutter dancer employer flannagan gershwin giant grower \\
+44         & NULL/t                         & 28              & abbot arden barnet berne bernhard breve choices closes comes dives \\
+45         & e/es/ing                       & 28              & abid battl conserv cours decompos dramatiz ensur enterpris envelop fiddl \\
+46         & NULL/ity                       & 27              & amoral arid carnal circular congenial convex corporeal elastic familar fecund \\
+47         & NULL/ity/ly                    & 26              & absurd actual artificial avid conceptual confidential critical directional eventual informal \\
+48         & ily/y                          & 26              & arbitrar clums contradictor contrar customar daint dand dizz extraordinar fragmentar \\
+49         & on/ons/ve                      & 26              & aborti absorpti consultati declarati definiti derivati descripti determinati evasi evocati \\
+50         & on/ve                          & 25              & alliterati coerci congesti consumpti corrosi defecti destructi diminuti evaporati inquisiti \\
+51         & NULL/a                         & 24              & 1040 atlantic attic bahi barth berth britannic corsi edwin galen \\
+52         & NULL/ism                       & 23              & absentee anti-american anti-catholic anti-intellectual ascetic authoritarian confucian cosmopolitan dual electromagnet \\
+53         & ed/s                           & 23              & adsorb billow bloodstain brighten cosponsor detour discolor gloat jackboot lighten \\
+54         & NULL/ic                        & 22              & algebra crypt iceland idealist idyll mechanist monolith moralist naturalist nihilist \\
+55         & NULL/s/y                       & 22              & advisor burglar chunk cone contributor dale draught inhibitor meat milk \\
+56         & NULL/ed/es/ing                 & 21              & blush branch by-pass caress clutch diminish dispatch distress echo flourish \\
+57         & NULL/hip                       & 21              & apprentices censors companions comrades courts dictators directors disciples distributors editors \\
+58         & e/ion                          & 21              & adjudicat agglomerat annihilat contrit decelerat detent discret eradicat erudit inactivat \\
+59         & NULL/al/ally/s                 & 20              & accident acoustic addition behavior clinic continent convention dialectic direction dramatic \\
+60         & NULL/d/r/s                     & 20              & analyze breathe challenge commute dazzle fille glaze glove grade improvise \\
+61         & NULL/er                        & 20              & 25-foot beech bobby-sox british fowl grimm hash holland lard lied \\
+62         & e/ed/ing/ion                   & 20              & activat consolidat contaminat de-iodinat devastat differentiat dilut exasperat fabricat infuriat \\
+63         & ng/on/ons/ve                   & 20              & abstracti asserti connecti decorati disrupti distributi evaluati illustrati imitati impressi \\
+64         & NULL/g                         & 19              & agin anythin aspirin basin breakin bumpin cavin chen croakin delvin \\
+65         & es/ng                          & 18              & assembli betti biddi buddi buggi citi discoveri fairi hobbi inquiri \\
+66         & m/t/ts                         & 18              & anti-communis arianis buddhis congregationalis cubis evangelis existentialis fascis imperialis industrialis \\
+67         & NULL/al/ally                   & 17              & biologic extern geographic geometric graphic ironic logic microscopic philosophic physiologic \\
+68         & NULL/ic/s                      & 17              & antagonist bureaucrat communist diaphragm enthusiast expressionist humanist impressionist individualist myth \\
+69         & e/ed/ion                       & 17              & animat arbitrat assimilat desegregat disaffiliat duplicat emancipat enunciat evacuat exonerat \\
+70         & e/ity                          & 17              & facil felic feminin futil hostil immatur insecur masculin mediocr obscen \\
+71         & NULL/d/ment/s                  & 16              & achieve acknowledge advance commence confine displace encourage engage improve induce \\
+72         & NULL/ed/er/ing/s               & 16              & boost borrow charm contend crowd demand float halt harvest plaster \\
+73         & NULL/r                         & 16              & able artifice bevo bugle canto curricula delle deluxe howse laude \\
+74         & e/ed/es/ing/ion                & 16              & accumulat conjugat culminat cultivat deteriorat dilat dominat estimat fascinat graduat \\
+75         & NULL/ed/es                     & 15              & ambush bench chorus clash clench climax couch dish encompass foil \\
+76         & NULL/on                        & 15              & bergs clint dicks glenn graft grist hilt isaacs mats michaels \\
+77         & d/r/s                          & 15              & beste clinche crashe dabble emptie fancie finishe impresse lande launche \\
+78         & 's/NULL/ian                    & 14              & carleton churchill cromwell einstein faulkner freud hanover hegel newton orwell \\
+79         & NULL/d/r/rs/s                  & 14              & admire carrie compute examine explore intrude invade merge promote pursue \\
+80         & NULL/l                         & 14              & apocrypha bacteria flora inertia isabel joshua mcneil paschal phenomena pleura \\
+81         & NULL/man                       & 14              & beads bonds colts eddy fried handicrafts heads heck leads marks \\
+82         & NULL/th                        & 14              & bread commonweal eighteen eleven fifteen fourteen nineteen outgrow seventeen seventy-four \\
+83         & cy/t                           & 14              & astringen blatan buoyan complacen desponden expedien inefficien poten pregnan proficien \\
+84         & d/r/r's/rs                     & 14              & attacke commissione controlle coope designe drumme fielde hunte listene murdere \\
+85         & m/tic                          & 14              & autis bolshevis determinis feudalis hedonis isolationis materialis opportunis optimis paternalis \\
+86         & NULL/d/r                       & 13              & blaze compile condense fake favore graze hande heade hustle inquire \\
+87         & NULL/ed/ing/ings/s             & 13              & belong boast fasten finger flavor gather happen offer proceed reckon \\
+88         & NULL/ide                       & 13              & backs beds canyons curbs docks fires irons mountains oceans rings \\
+89         & an/an's/en                     & 13              & clergym congressm craftsm fisherm frenchm lawm laym morg patrolm policem \\
+90         & ce/t/ts                        & 13              & adheren adolescen assistan attendan corresponden deferen devian equivalen incompeten insurgen \\
+91         & ed/ion/ions                    & 13              & abbreviat afflict confabulat dislocat implicat induct interpolat interrelat miscalculat modulat \\
+92         & ed/y                           & 13              & blurr cackl disunit equall flopp grizzl heft kindl panick slaver \\
+93         & er/ing                         & 13              & bestsell gun-sling housekeep kidd matchmak maul money-mak place-kick rodd scaveng \\
+94         & ied/y                          & 13              & autops dignif disqualif flurr fortif frenz hypertroph mollif ratif stratif \\
+95         & NULL/ally/s                    & 12              & academic anesthetic basic characteristic comic electronic heroic hydraulic linguistic poetic \\
+96         & NULL/d/rs                      & 12              & appraise baffle bathe besiege campaigne eulogize persuade restore shifte straggle \\
+97         & NULL/n/ns                      & 12              & africa albania arabia diva guardia katanga korea oratio persia rumania \\
+98         & ed/ing/ion                     & 12              & delineat detonat disseminat emigrat humiliat inaugurat incubat indoctrinat infiltrat redecorat \\
+99         & ed/ing/s                       & 12              & adjoin braid catapult churn clamp engulf hinder overpower quiver smolder \\
+100        & ers/ing                        & 12              & bricklay churchgo homebuild housebreak lawmak motel-keep plunk policy-mak seafar vouch \\
+101        & -old/NULL                      & 11              & 10-year 11-year 21-year 4-year 50-year 52-year centuries quarter-century ten-year twelve-year \\
+102        & NULL/d/ment                    & 11              & amaze appease discourage disperse endorse enlarge enslave incite postpone pronounce \\
+103        & NULL/ism/s                     & 11              & anglican athletic career despot hindu protestant revival robot stoic unitarian \\
+104        & NULL/ity/ly/s                  & 11              & intellectual irregular mortal original particular potential regular rigid solid spiritual \\
+105        & ble/tion                       & 11              & adapta combina commenda detesta dura presenta reputa solu taxa valua \\
+106        & c/es                           & 11              & academi allergi dynasti majesti moni orthographi phoni prosodi specifi symphoni \\
+107        & e/ed/er/es/ing                 & 11              & challeng commut dazzl divid fram glaz improvis lectur puzzl revolv \\
+108        & e/ed/es/ing/ion/ions           & 11              & accommodat associat celebrat concentrat constitut designat eliminat motivat rotat substitut \\
+109        & ed/er/ing                      & 11              & ambl chipp dipp double-cross dragg extrud logg muffl propell shredd \\
+110        & ng/sh                          & 11              & bangi blui fooli greeni moori parki reddi rubbi sluggi warmi \\
+111        & on/ons/ve/vely                 & 11              & affirmati aggressi attenti conclusi distincti exclusi expansi extensi imaginati intuiti \\
+112        & -up/NULL                       & 10              & beefed blown bucking dammed hunched pumped rolled stepped stored stuck \\
+113        & NULL/d/rs/s                    & 10              & bribe glide joke organize prime rope sample share smoke stabilize \\
+114        & NULL/ed/ing/s/y                & 10              & curl gear puff risk shadow storm string swamp weight word \\
+115        & NULL/ful/s                     & 10              & bale faith fate glee prayer resource tablespoon teaspoon truth youth \\
+116        & NULL/man/men                   & 10              & clergy crafts french handy infantry irish sales spokes sports yachts \\
+117        & NULL/o                         & 10              & albert artur bong borne fats ferdinand kant pint realism tristan \\
+118        & NULL/ome                       & 10              & bothers burdens fears fours quarrels threes tires troubles twos ventures \\
+119        & NULL/rs/s                      & 10              & adventure dime drove gamble inside revenue romance sauce submarine tube \\
+120        & d/r/r's                        & 10              & jewele palme parke petitione printe roofe salte trappe tucke wheele \\
+121        & ed/es/ing                      & 10              & accru agoniz allud befuddl consol elud pervad stepp wheez wrench \\
+122        & ied/ies/y/ying                 & 10              & certif clarif decr embod identif qualif quer repl satisf unif \\
+123        & ing/s                          & 10              & crossroad forebear geyser mislead misrepresent resound scissor teem tinker zeis \\
+124        & ity/ous                        & 10              & ambigu anonym credul enorm frivol homogene incongru spontane unambigu unanim \\
+125        & '/g/gs                         & 9               & buildin drawin holdin kissin meanin meetin shootin showin workin \\
+126        & 's/s                           & 9               & brahm constellation facet-plane leopard lizard outskirt purchaser steinbeck wive \\
+127        & NULL/ary/s                     & 9               & diversion illusion legend mission parliament precaution reaction sediment substitution \\
+128        & NULL/ed/ers/ing/s              & 9               & exploit export learn lift mutter request retain thicken thrill \\
+129        & NULL/ed/ing/ment               & 9               & abandon align amend enact enchant encroach enlighten enrich install \\
+130        & NULL/h                         & 9               & dept doug eric nawt sixty-eight thirty-eight toot twenty-eight viet \\
+131        & NULL/ton                       & 9               & asking barring beaver chester evans farming hunting leigh welling \\
+132        & NULL/tone                      & 9               & blacks corners fields galls grinds miles puddings reds tombs \\
+133        & a/c                            & 9               & anemi arabi encyclopedi eugeni euphori hydrophobi hyperemi myopi nostalgi \\
+134        & able/ed                        & 9               & unachiev uncontroll undetect unenvi unexplain unjustifi unrecogniz unsupport unwarrant \\
+135        & al/e/es                        & 9               & aborigin adjectiv anecdot architectur medicin procedur residu scriptur spir \\
+136        & ce/ces/t                       & 9               & fragran indulgen insignifican obedien observan referen reminiscen resistan resonan \\
+137        & e/ed/er/ers/es/ing             & 9               & advertis comput explor intrud invad merg rattl receiv settl \\
+138        & e/ed/ing/ion/ions              & 9               & complicat correlat deviat exaggerat formulat frustrat illuminat negotiat revis \\
+139        & e/ely/ity                      & 9               & agil auster creativ immens insan passiv scarc selectiv seren \\
+140        & ic/s                           & 9               & aristocrat atheist autocrat diatom modernist monopolist pessimist photoelectron sycophant \\
+141        & ic/y                           & 9               & asymmetr autonom chromatograph oceanograph phonolog pre-histor thermometr topograph typograph \\
+142        & ly/ng                          & 9               & crazi drowsi fussi shaki sleepi sloppi speedi steami sulki \\
+143        & m/t/tic                        & 9               & idealis naturalis nihilis pacifis rationalis realis relativis sadis socialis \\
+144        & NULL/ed/ing/y                  & 8               & clatter flatter savor shiver shudder squash squeak stuff \\
+145        & NULL/ed/y                      & 8               & bluster butcher chalk fuzz knott pepper starch thirst \\
+146        & NULL/ers                       & 8               & casework down-and-out eastern jeep lineback midwestern overnight pittsburgh \\
+147        & NULL/ion                       & 8               & compass crucifix dissect eros extinct incurs infarct tax-exempt \\
+148        & NULL/ity/s                     & 8               & acid criminal eccentric fluid infidel minor senior superior \\
+149        & NULL/ized/s                    & 8               & aerosol item marble memorial mineral ritual scandal standard \\
+150        & NULL/men                       & 8               & boats cattle cavalry frontiers grooms quarry trades tribes \\
+151        & NULL/n/s                       & 8               & arise barge collage dystopia forsake mistake rise strive \\
+152        & NULL/ous/s                     & 8               & advantage cavern danger gorge hazard peril traitor villain \\
+153        & NULL/s/ted/ting                & 8               & admit blot marina omit permit plot squat submit \\
+154        & NULL/st                        & 8               & again among cute dense greene keene little mole \\
+155        & and/y                          & 8               & flatl greenl highl homel mainl motherl overl portl \\
+156        & cal/st/sts                     & 8               & anthropologi ecumeni evangeli geologi gynecologi methodi psychologi sociologi \\
+157        & d/r/st                         & 8               & briefe busie calme longe neare slowe smoothe steepe \\
+158        & e/ng                           & 8               & beati bowi conni grazi lingeri matti sorti tilli \\
+159        & ed/er/ers/ing                  & 8               & bann distill flapp kidnapp plann sinn skipp travell \\
+160        & ed/ment                        & 8               & abridg assort dismember indict maladjust parch reapportion unemploy \\
+161        & er/ers/ing                     & 8               & beer-runn best-sell bodybuild bootlegg fund-rais hitt theatergo typewrit \\
+162        & er/ng                          & 8               & barri chanti chilli clothi courti fronti frothi raini \\
+163        & ied/ies/y                      & 8               & exemplif glorif lobb parod salar signif simplif testif \\
+164        & ied/y/ying                     & 8               & compl gratif hurr justif notif purif remarr typif \\
+165        & ies/y/y's                      & 8               & authorit communit compan dictionar enem galler municipalit universit \\
+166        & ion/ions/ory                   & 8               & classificat explanat explorat introduct observat premonit revelat satisfact \\
+167        & m/ts                           & 8               & abstractionis defeatis neo-classicis perfectionis puris symbolis transcendentalis zionis \\
+168        & ng/on/ve                       & 8               & co-operati compressi contemplati disintegrati initiati integrati preventi prohibiti \\
+169        & on/ve/vely                     & 8               & administrati cohesi competiti comprehensi decepti indecisi provocati successi \\
+170        & ous/ty                         & 8               & capaci feroci hilari loquaci precoci tenaci veraci vivaci \\
+171        & ry/tion                        & 8               & avia dispensa documenta fragmenta imagina saluta sanita sedimenta \\
+172        & s/y                            & 8               & frill jitter maggot respirator sinew vicker wile wilke \\
+173        & sis/tic                        & 8               & hypno mime narco necro proteoly psychoanaly sclero synthe \\
+174        & '/NULL/g/gs                    & 7               & comin doin goin leavin nothin sayin takin \\
+175        & 's/NULL/ed/ing/s               & 7               & bellow flock flood harbor pioneer pool scout \\
+176        & -out/NULL                      & 7               & breaking burned camping drawn played smashed washed \\
+177        & NULL/age/s                     & 7               & acre broker gallon mile parson teen yard \\
+178        & NULL/d/ly                      & 7               & alternate approximate consummate intimate mute secure severe \\
+179        & NULL/e/es                      & 7               & claus discours hord premier refuge therefor troup \\
+180        & NULL/ed/er/ers/ing/s           & 7               & boil dissent fold remind review trail transform \\
+181        & NULL/er/ers                    & 7               & bunt do-good foreign outfield slick sojourn western \\
+182        & NULL/hip/hips                  & 7               & champions fellows interrelations proprietors relations scholars troops \\
+183        & NULL/ia                        & 7               & cecil fuchs niger rhodes sylvan virgil yugoslav \\
+184        & NULL/is                        & 7               & cornwall digital franco genes gill karl tenn \\
+185        & NULL/k                         & 7               & aromatic frederic mackinac merrimac nova pins squaw \\
+186        & NULL/less/s                    & 7               & bottom defense effort flaw nerve noise window \\
+187        & NULL/ous                       & 7               & cadaver courage libel rancor venom vigor zeal \\
+188        & NULL/r/rs                      & 7               & calenda old-time outside teenage thinke torque underwrite \\
+189        & NULL/r/s                       & 7               & bite clove dove gable partake sofa weave \\
+190        & NULL/rs                        & 7               & caste equalize forty-nine nibble ringside sieve wholesale \\
+191        & NULL/ry                        & 7               & baptiste covent knight-errant lavato lotte statuto summit \\
+192        & NULL/s'                        & 7               & archbishop ass'n christopher falcon steelmaker surcliffe wacker \\
+193        & NULL/son                       & 7               & donald erik esther neil pater robin sander \\
+194        & c/sm                           & 7               & alcoholi anti-semiti byroni dogmati patrioti pragmati rheumati \\
+195        & d/r/rs/s                       & 7               & dresse drie modifie pitche preache publishe supplie \\
+196        & d/st                           & 7               & balla earne fainte fitte flori foule prou \\
+197        & d/t/ts                         & 7               & balle baske bille bucke socke tappe toile \\
+198        & ed/ing/ment                    & 7               & astonish deploy disappoint disillusion embarrass endear re-enact \\
+199        & ey/y                           & 7               & berkel dail manl mcfeel stac tawn whitel \\
+200        & ical/y                         & 7               & chronolog glottochronolog macropatholog methodolog numerolog technolog teleolog \\
+201        & l/ry                           & 7               & beneficia elementa functiona hend judicia supplementa tempora \\
+202        & ng/t                           & 7               & checki damni looki petti pursui stru summi \\
+203        & r/s                            & 7               & digge ditche flie fortie hoove pacifie sacke \\
+204        & sity/us                        & 7               & genero lumino monstro poro scrupulo virtuo visco \\
+205        & 's/NULL/ing/s                  & 6               & breed clerk clown conflict fund tower \\
+206        & NULL/an                        & 6               & dominic epicure gratt hawaii sunt tibet \\
+207        & NULL/d/less/s                  & 6               & cease feature price score sense value \\
+208        & NULL/e/s                       & 6               & antenna being clement oath sultan sword \\
+209        & NULL/ed/ers/ing                & 6               & blink canvass honeymoon prowl suck torment \\
+210        & NULL/ed/ing/ion/ions/ive/s     & 6               & assert attract connect disrupt restrict suggest \\
+211        & NULL/ed/ment                   & 6               & apportion comport encamp impair readjust replenish \\
+212        & NULL/ern                       & 6               & midwest northeast northwest south-east southeast southwest \\
+213        & NULL/ians                      & 6               & diagnostic grammar oregon ozagen rhetoric venus \\
+214        & NULL/ie                        & 6               & bourgeois brod dion natal nell tess \\
+215        & NULL/ish/s                     & 6               & amateur freak kitten non-jew schoolgirl token \\
+216        & NULL/ist                       & 6               & conservation genetic harpsichord jansen psalm segregation \\
+217        & NULL/ist/ists/s                & 6               & cartoon column solo survival violin watercolor \\
+218        & NULL/le                        & 6               & catt gaul glenda orvil pueri scuff \\
+219        & NULL/ment                      & 6               & allure apart atone disengage embezzle gouverne \\
+220        & NULL/s/ship                    & 6               & champion comrade disciple fellow interrelation successor \\
+221        & a/e                            & 6               & camill celi gonn habl rozell syring \\
+222        & a/um                           & 6               & antiser curricul medi memorand millenni strat \\
+223        & ble/l                          & 6               & hospita impractica practica remova renewa socia \\
+224        & ble/ng                         & 6               & collapsi converti discerni falli reproduci reversi \\
+225        & cy/t/tly                       & 6               & apparen expectan fluen poignan pungen sufficien \\
+226        & d/n                            & 6               & brau polle unshave warre waxe woode \\
+227        & d/rs/s                         & 6               & gobble grasse hatte pushe skirmishe watche \\
+228        & de/ded/des/ding/sion/sive      & 6               & conclu deci exclu explo inclu intru \\
+229        & e/ed/ers/ing                   & 6               & baffl besieg persuad restor straggl subscrib \\
+230        & e/ed/ion/ions                  & 6               & allocat articulat congregat populat tabulat vacat \\
+231        & e/es/ical                      & 6               & bibl empir epicycl hypocrit spher theatr \\
+232        & e/es/y                         & 6               & breez excellenc flak instanc notabl steepl \\
+233        & ed/ers/ing                     & 6               & bleach despoil hijack scann sipp worshipp \\
+234        & ess/g                          & 6               & balkin heavin pettin readin scratchin stagin \\
+235        & ess/y                          & 6               & fairl namel purposel shapel statel timel \\
+236        & fied/fy/ty                     & 6               & clari digni identi intensi nulli quali \\
+237        & fth/ve                         & 6               & eighty-fi fifty-fi forty-fi seventy-fi twel twenty-fi \\
+238        & g/s                            & 6               & bobbin huggin mullin pickin robbin rollin \\
+239        & i/o                            & 6               & cennin cors guardin palazz ricc virtuos \\
+240        & ic/ical/y                      & 6               & allegor anatom autobiograph geometr morpholog symmetr \\
+241        & l/n                            & 6               & barto custodia jovia latera perennia virgi \\
+242        & ll/s                           & 6               & john' somebody' someone' sun' today' winche \\
+243        & ly/ness                        & 6               & dizzi haughti huski rueful tardi uneasi \\
+244        & m/t                            & 6               & colonialis federalis fundamentalis nudis platonis quietis \\
+245        & m/t/tic/ts                     & 6               & capitalis expressionis humanis impressionis individualis traditionalis \\
+246        & ng/ngly/on                     & 6               & accordi devastati exasperati fascinati hesitati humiliati \\
+247        & ng/on/onal/ons                 & 6               & confessi constituti devoti educati excepti professi \\
+248        & ng/s                           & 6               & bori diagnosi landi loomi skii spirali \\
+249        & ng/tion                        & 6               & decomposi exposi imposi interposi proposi tradi \\
+250        & ng/ve                          & 6               & costi massi resisti stro supporti voti \\
+251        & ty/zed                         & 6               & conventionali fertili hospitali immortali legali sexuali \\
+252        & 's/NULL/al/ally/s              & 5               & denomination government mechanic organization region \\
+253        & 's/NULL/an                     & 5               & baltimore luther rousseau shakespeare wesley \\
+254        & 's/NULL/ly                     & 5               & coward divine instant stout wife \\
+255        & 's/NULL/n/ns                   & 5               & cuba georgia russia victoria virginia \\
+256        & 's/NULL/s/ship                 & 5               & distributor medium musician professor speaker \\
+257        & -/NULL                         & 5               & ahah eighteenth higher nursery upper-middle \\
+258        & -c/NULL                        & 5               & -20-degrees 1-degree 10-degrees 110-degrees 37-degrees \\
+259        & 0/NULL                         & 5               & $102 $150 $250 $310 $500 \\
+260        & NULL/atic/s                    & 5               & axiom idiom paradigm problem symptom \\
+261        & NULL/d/dly/s                   & 5               & assure concede decide determine suppose \\
+262        & NULL/d/r/rs                    & 5               & dispense erase peddle rustle waite \\
+263        & NULL/ed/er                     & 5               & blackmail broil gush harden wield \\
+264        & NULL/ed/ing/less/s             & 5               & limit peer regard root stain \\
+265        & NULL/ed/ing/ment/s             & 5               & assign attain conceal fulfill unfold \\
+266        & NULL/ed/ion                    & 5               & conscript eject recess suppress trill \\
+267        & NULL/ed/s/y                    & 5               & lull peak powder splinter warrant \\
+268        & NULL/ful                       & 5               & barns bliss distaste forgit wrath \\
+269        & NULL/ial/ly                    & 5               & confident consequent different evident prudent \\
+270        & NULL/ing/ings                  & 5               & bleed ceil gould scaffold sweep \\
+271        & NULL/ion/ions                  & 5               & convent exempt quest transact transit \\
+272        & NULL/ish                       & 5               & fiend heathen puppy wasp yeller \\
+273        & NULL/ity/ized/ly               & 5               & brutal conventional legal personal sexual \\
+274        & NULL/less                      & 5               & flint guile mirth rudder spine \\
+275        & NULL/ly/st                     & 5               & bare crude mere pure sincere \\
+276        & NULL/ped/ping/s                & 5               & clap crop overlap slap strap \\
+277        & NULL/r/rs/s                    & 5               & cruise crusade ledge lose village \\
+278        & NULL/ry/s                      & 5               & gadget gallant image pageant weapon \\
+279        & NULL/s/ting                    & 5               & beset co-op output split upset \\
+280        & NULL/ship                      & 5               & chairman horseman seaman showman sportsman \\
+281        & NULL/ted                       & 5               & bela deep-sea nausea outfit rebut \\
+282        & NULL/ter                       & 5               & fens hips tricks wildcat winches \\
+283        & NULL/tic                       & 5               & cinema enigma melodrama schema trauma \\
+284        & a/on                           & 5               & camer criteri jord porti silic \\
+285        & an/o                           & 5               & capell francisc mexic morocc palladi \\
+286        & ar/es                          & 5               & arteriol granul macromolecul nodul tubul \\
+287        & cal/sts                        & 5               & archaeologi botani chemi cosmologi philologi \\
+288        & ce/ces/tial                    & 5               & essen experien inferen preferen substan \\
+289        & cy/t/ts                        & 5               & delinquen detergen solven tangen tenan \\
+290        & d/es                           & 5               & candi enrolle inducte patente rabi \\
+291        & d/ment                         & 5               & bedazzle derange disburse disenfranchise estrange \\
+292        & d/ng                           & 5               & limpi livi luri placi timi \\
+293        & d/ss                           & 5               & coarsene governe likene loosene whitene \\
+294        & d/t                            & 5               & frankfor hatche raymon skille whippe \\
+295        & de/ne                          & 5               & carbi chlori confi fluori iodi \\
+296        & e/ed/ers/es/ing                & 5               & arrang enforc organiz sampl stabiliz \\
+297        & e/ed/es/ing/y                  & 5               & bubbl doubl singl spong tast \\
+298        & e/es/ic                        & 5               & atmospher catastroph meteorit micrometeorit parasit \\
+299        & e/h                            & 5               & grap peac roug stanc sulamit \\
+300        & e/l                            & 5               & beal larva stol unti vial \\
+301        & e/o                            & 5               & aventin brogli carthag portag sorrentin \\
+302        & ed/es/ion                      & 5               & castigat dedicat impersonat overestimat re-creat \\
+303        & er/ers/re                      & 5               & calib chamb deliv theat timb \\
+304        & er/ric                         & 5               & calorimet diamet paramet spectromet spectrophotomet \\
+305        & es/is                          & 5               & anastomos chav ellips neuros prognos \\
+306        & ess/ike                        & 5               & childl dreaml godl lifel warl \\
+307        & f/n                            & 5               & brie chie spoo thereo whereo \\
+308        & id/or                          & 5               & horr liqu splend stup torp \\
+309        & ifth/ive/our                   & 5               & eighty-f fifty-f forty-f seventy-f twenty-f \\
+310        & ion/ory                        & 5               & anti-discriminat condemnat inflammat purgat reformat \\
+311        & l/te                           & 5               & effectua electora germina proxima reciproca \\
+312        & le/les/ular                    & 5               & musc partic spectac triang vehic \\
+313        & n/ns/us/usly                   & 5               & ambitio cautio expeditio rebellio suspicio \\
+314        & n/r                            & 5               & bria drunke heathe rato unclea \\
+315        & n/us                           & 5               & contagio flirtatio nutritio oblivio seditio \\
+316        & ng/ties/ty                     & 5               & cavi continui divini maturi securi \\
+317        & on/ve/ves                      & 5               & adhesi conservati contracepti narrati subversi \\
+318        & ous/s                          & 5               & gase impetu portent rigor sinu \\
+319        & ous/y                          & 5               & chivalr endogam exogam infam monogam \\
+\bottomrule
+\end{tabular}
+

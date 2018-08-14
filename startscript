@@ -1,0 +1,6 @@
+n
+datasets/english-brown.txt
+n
+n
+y
+max_word_types=7000 n_eigenvectors=6
