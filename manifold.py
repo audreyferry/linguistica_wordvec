@@ -2300,7 +2300,7 @@ def plot_as_specified(x, y, clr, title_string, scatter=False, ylimits=None):
 	plt.close(fig)	
 
 
-def eigenvector_data_for_excel(wordlist, eigenvectors, diameter, timestamp_string, rownorm=False):
+def eigenvector_data_for_excel(wordlist, eigenvectors, diameter, dev_output_dirname, timestamp_string, rownorm=False):
 	# AVOID EFFECT OF ',' WHEN .csv IS OPENED IN EXCEL. RESTORE ',' UPON RETURN.
 	if wordlist.count(',') > 0:
 		comma_index = wordlist.index(',')
@@ -2310,9 +2310,9 @@ def eigenvector_data_for_excel(wordlist, eigenvectors, diameter, timestamp_strin
 
 	# OUTPUT TO FILE
 	if rownorm == False:
-		outfilename = "eigenvector_data_for_excel." + timestamp_string + ".csv"
+		outfilename = dev_output_dirname + "/eigenvector_data_for_excel." + timestamp_string + ".csv"
 	else:
-		outfilename = "rownorm_eigenvector_data_for_excel." + timestamp_string + ".csv"
+		outfilename = dev_output_dirname + "/rownorm_eigenvector_data_for_excel." + timestamp_string + ".csv"
 		
 	outfile = open(outfilename, mode='w')
 	#print(file=outfile)
@@ -2472,6 +2472,10 @@ def run(unigram_counter=None, bigram_counter=None, trigram_counter=None,
 		max_word_types=1000, n_neighbors=9, n_eigenvectors=11,
 		min_context_count=3):
 
+    dev_output_dirname = "DevOutput"
+    if not os.path.exists(dev_output_dirname):
+    	os.mkdir(dev_output_dirname)
+    
     word_freq_pairs = double_sorted(unigram_counter.items(),
                                     key=lambda x: x[1], reverse=True)
     	
@@ -2635,10 +2639,11 @@ def run(unigram_counter=None, bigram_counter=None, trigram_counter=None,
     #study_decomposition(wordlist, eigenvectors, atoms, codes, header, alg_label, timestamp)		
     ##investigate_atoms(wordlist, eigenvectors, atoms)
     #basic_data_for_excel(wordlist, eigenvectors, atoms, header, alg_label, timestamp)
-    eigenvector_data_for_excel(wordlist, eigenvectors, diameter, timestamp_string, rownorm=False)	# May want these two also for atoms
+    
+    eigenvector_data_for_excel(wordlist, eigenvectors, diameter, dev_output_dirname, timestamp_string, rownorm=False)	# May want these two also for atoms
     eigenvector_plots(wordlist, eigenvectors, timestamp_string)
     eig0_diameter_ascending_plots(sorted(eigenvectors[:,0]), sorted(diameter), timestamp_string)
-    eigenvector_data_for_excel(wordlist, rownorm_eigenvectors, diameter, timestamp_string, rownorm=True)
+    eigenvector_data_for_excel(wordlist, rownorm_eigenvectors, diameter, dev_output_dirname, timestamp_string, rownorm=True)
     
     #outfilename = 'count.csv'
     #outfile = open(outfilename, mode='w')
