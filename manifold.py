@@ -14,6 +14,8 @@ import sklearn
 from sklearn.preprocessing import normalize as skl_normalize
 from sklearn.decomposition import DictionaryLearning, sparse_encode
 from sklearn.decomposition import FastICA
+from sklearn.cluster       import spectral_clustering, k_means
+from sklearn.manifold      import spectral_embedding
 import numpy as np
 import networkx as nx
 
@@ -21,7 +23,7 @@ import plotly
 import plotly.graph_objs as go
 
 import jsonpickle   # used   conda install -c conda-forge jsonpickle   
-
+import xlsxwriter
 
 import os   # audrey  2017_01_29  Needed only for os.mkdir('HEATMAPS')
 import warnings
@@ -2297,10 +2299,258 @@ def plot_as_specified(x, y, clr, title_string, scatter=False, ylimits=None):
 	else:
 		ax.plot(x, y, clr)
 	fig.savefig(title_string + ".png")
-	plt.close(fig)	
+	plt.close(fig)
+	
+	
+def spectral_clustering_using_sklearn(affinity_matrix, num_eigenvectors, num_clusters, kmeans_random_state):  
+	# latter 3 args could be kwargs, for clarity. 
+	# Other kwargs for sklearn functions used within this function are omitted as not likely to be used.
+	
+	# N.B. In spectral_embedding definition, norm_laplacian = True  and eigen_solver='arpack' by default.
+	maps = spectral_embedding(affinity_matrix, n_components=num_eigenvectors, drop_first=False)
+	
+	# Use the object-oriented version for access to cluster centers.
+	kmeans_clustering = sklearn.cluster.KMeans(n_clusters=num_clusters, random_state=kmeans_random_state).fit(maps)
+	cluster_labels = kmeans_clustering.labels_
+	cluster_centers = kmeans_clustering.cluster_centers_
+	
+	return maps, cluster_labels, cluster_centers    # CONDENSE THIS
+	
+	
+def generate_eigenvector_spreadsheet(source, wordlist, eigenvectors, diameter, cluster_labels, cluster_centers, dev_output_dirname, timestamp_string, rownorm=False):
+	# Now handled through xlsxwriter below
+	# OUTPUT TO FILE
+	#if rownorm == False:
+	#	outfilename = dev_output_dirname + source + ".eigenvector_data_for_excel." + timestamp_string + ".csv"
+	#else:
+	#	outfilename = dev_output_dirname + source + ".rownorm_eigenvector_data_for_excel." + timestamp_string + ".csv"
+		
+	#outfile = open(outfilename, mode='w')
+	#print(file=outfile)
+	
+	# PRELIMINARIES
+	C = len(wordlist)
+	N = eigenvectors.shape[1]         # dimension of wordvector space = number of eigenvectors
+	
+	eig_rel = np.ones_like(eigenvectors)
+	for k in range(N):
+		eig_rel[:,k] = eigenvectors[:,k] / eigenvectors[:,0]
+	
+	
+	# USING xlsxwriter
+	if rownorm == False:
+		workbook = xlsxwriter.Workbook(dev_output_dirname + source + ".eigenvector_data_for_excel." + timestamp_string + ".xlsx")
+	else:
+		workbook = xlsxwriter.Workbook(dev_output_dirname + source + ".rownorm_eigenvector_data_for_excel." + timestamp_string + ".xlsx")
+		
+	bold = workbook.add_format({'bold': True})
+	float_format = workbook.add_format({'num_format':'0.00000000'})
+	merge_format = workbook.add_format({'align': 'center', 'bold': True})
+	
+	worksheet1 = workbook.add_worksheet('Wordlist order')
+	worksheet2 = workbook.add_worksheet('Sorted by coord value')
+	worksheet3 = workbook.add_worksheet('Sorted by cluster, then coord')
+	worksheet4 = workbook.add_worksheet()  # this one is for cluster centers and anything else I record, maybe means as I calculate.
+	
+	##############
+	# WORKSHEET1 #
+	##############
+	
+	worksheet1.set_column(5, 2*N+4, 12)         # 1st column, last column, width
+	
+	# Column headings
+	worksheet1.write(0, 0, 'Index', bold)		# A1
+	worksheet1.write(0, 1, 'Wordlist', bold)	# B1
+	worksheet1.write(0, 2, 'Cluster', bold)		# C1
+	worksheet1.write(0, 3, 'Diameter', bold)	# D1
+	
+	for n, col in zip(range(N), range(5,N+5)):
+		worksheet1.write(0, col, "Eigenvector" + str(n), bold)
+		
+	for n, col in zip(range(1,N), range(N+6, 2*N+5)):
+		worksheet1.write(0, col, "Eig" + str(n) + " / Eig0", bold)
+	
+	# Data
+	for c in range(C):
+		row = c + 1		
+		worksheet1.write(row, 0, c)
+		worksheet1.write(row, 1, wordlist[c])
+		worksheet1.write(row, 2, cluster_labels[c])
+		worksheet1.write(row, 3, diameter[c])
+		
+		#skip one column  
+		for n, col in zip(range(N), range(5,N+5)):
+			worksheet1.write(row, col, eigenvectors[c, n], float_format)
+			
+		#skip one column
+		for n, col in zip(range(1,N), range(N+6, 2*N+5)):
+			worksheet1.write(row, col, eig_rel[c, n], float_format)  
+			# Recall from above that eig_rel[c,n] = eigenvectors[c, n]/eigenvectors[c,0]
+			
+	##############
+	# WORKSHEET2 #
+	##############
+	## SORT EACH EIGENVECTOR BY COORD VALUE (INCREASING), USING ARGSORT 
+	arg_sortation = np.argsort(eigenvectors, axis=0, kind='mergesort')    # C x N matrix
+	arg_sortation_rel =  np.argsort(eig_rel, axis=0, kind='mergesort')    # also C x N, disregard leftmost column
+	
+	
+	# Default value for column width is too small to display desired number of digits.
+	# Total number of columns used (on this worksheet) = 1+ N*5 + (N-1)*5 -1 = (2N-1)*5.
+	# In xlsxwriter, indexing starts at 0.
+	worksheet2.set_column(0, (2*N-1)*5-1, 11)		# 1st column, last column, width 
+	
+	## Column headings
+	worksheet2.write(0, 0, 'diameter', bold)
+	
+	for n in range(N):
+		col = 1 + n*5
+		worksheet2.merge_range(0, col, 0, col+2, "Eig"+str(n), merge_format)
+		worksheet2.write(0, col+3, 'Eig'+str(n)+' w/labels', bold)
+		
+	for n in range(1,N):
+		col = 1+ N*5 + (n-1)*5
+		worksheet2.merge_range(0, col, 0, col+2, "Eig"+str(n)+" / Eig0", merge_format)
+		worksheet2.write(0, col+3, 'Eig'+str(n)+'/Eig0 w/labels', bold)
+	
+		
+	## Data
+	for c in range(C):
+		row = c + 1
+		
+		indx = arg_sortation[c,0]
+		worksheet2.write(row, 0, diameter[indx])
+		
+		for n in range(N):
+			indx = arg_sortation[c,n]
+			col = 1+n*5
+			worksheet2.write(row, col, indx)
+			worksheet2.write(row, col+1, wordlist[indx])
+			worksheet2.write(row, col+2, eigenvectors[indx,n], float_format)
+			worksheet2.write(row, col+3, cluster_labels[indx])
+			
+		for n in range(1,N):
+			indx = arg_sortation_rel[c,n]
+			col = 1 + N*5 + (n-1)*5
+			worksheet2.write(row, col, indx)
+			worksheet2.write(row, col+1, wordlist[indx])
+			worksheet2.write(row, col+2, eig_rel[indx,n], float_format)
+			worksheet2.write(row, col+3, cluster_labels[indx])
+			
+	
+	##############
+	# WORKSHEET3 #
+	##############
+	## SORT EACH EIGENVECTOR FIRST BY CLUSTER, THEN BY COORD VALUE (INCREASING), USING LEXSORT
+	lex_sortation = np.ones((C,N), dtype=int)        # C x N matrix  
+	lex_sortation_rel = np.ones((C,N), dtype=int)    # C x N matrix     disregard leftmost column
+	
+	for n in range(N):
+		lex_sortation[:,n] = np.lexsort((eigenvectors[:,n], cluster_labels))
+		
+	for n in range(1,N):
+		lex_sortation_rel[:,n] = np.lexsort((eig_rel[:,n], cluster_labels))
+	
+	
+	# xlsxwriter instructions are similar to those for Worksheet2, above
+	worksheet3.set_column(0, (2*N-1)*5-1, 11)   #set column width
+	
+	## Column headings
+	for n in range(N):
+		col = 1 + n*5
+		worksheet3.merge_range(0, col, 0, col+2, "Eig"+str(n), merge_format)
+		worksheet3.write(0, col+3, 'Clusters @Eig'+str(n), bold)
+		
+	for n in range(1,N):
+		col = 1+ N*5 + (n-1)*5
+		worksheet3.merge_range(0, col, 0, col+2, "Eig"+str(n)+" / Eig0", merge_format)
+		worksheet3.write(0, col+3, 'Clusters @Eig'+str(n)+'/Eig0', bold)
+	
+	
+	## Data
+	for c in range(C):
+		row = c + 1
+		
+		for n in range(N):    # for each eigenvector:
+			indx = lex_sortation[c,n]
+			col = 1 + n*5
+			worksheet3.write(row, col, indx)
+			worksheet3.write(row, col+1, wordlist[indx])
+			worksheet3.write(row, col+2, eigenvectors[indx,n], float_format)
+			worksheet3.write(row, col+3, cluster_labels[indx])
+			
+		for n in range(1,N):
+			indx = lex_sortation_rel[c,n]
+			col = 1 + N*5 + (n-1)*5
+			worksheet3.write(row, col, indx)
+			worksheet3.write(row, col+1, wordlist[indx])
+			worksheet3.write(row, col+2, eig_rel[indx,n], float_format)
+			worksheet3.write(row, col+3, cluster_labels[indx])
 
+			
+	##############
+	# WORKSHEET4 #
+	##############
+	## RECORD MEAN OF EACH CLUSTER'S COORD VALUES ON EACH EIGENVECTOR
+	cluster_ids, card_per_cluster = np.unique(cluster_labels, return_counts=True)
+	num_clusters = len(cluster_ids)
+	# BE SURE COUNTS MATCH CATEGORIES IN ORDER   COULD COUNT AT SAME TIME AS SUM TO BE SURE
+	coord_sum_per_cluster_per_eigenvector  = np.zeros((num_clusters, N))
+	coord_mean_per_cluster_per_eigenvector = np.zeros((num_clusters, N))
+	
+	for c in range(C):
+		for n in range(N):
+			
+			coord_sum_per_cluster_per_eigenvector[cluster_labels[c],n] = \
+				coord_sum_per_cluster_per_eigenvector[cluster_labels[c],n] + eigenvectors[c,n]
+				
+	for cluster_id in range(num_clusters):
+		for n in range(N):
+			coord_mean_per_cluster_per_eigenvector[cluster_id,n] = \
+				coord_sum_per_cluster_per_eigenvector[cluster_id,n] / card_per_cluster[cluster_id]
+				
+	for cluster_id in range(num_clusters):
+		print("Cluster id =", cluster_id)
+		for n in range(N):
+			print(coord_mean_per_cluster_per_eigenvector[cluster_id,n])
+			
+	## XlsxWriter instructions
+	worksheet4.set_column(0, N+1, 11)	#set column width
+	worksheet4.write(0, 0, 'Coordinate mean per cluster per eigenvector', bold)
+	
+	#worksheet4.write(2, 0, 'A.  Computed from cluster output as produced by:   sklearn built-in spectral_clustering()   ' + timestamp_string, bold)
+	worksheet4.write(2, 0, 'A.  Computed from cluster output as recorded on Worksheet3   ' + timestamp_string, bold)
+	
+	## Column headings
+	for n, col in zip(range(N), range(1, N+1)):
+		worksheet4.write(3, col, 'Eig'+str(n), bold)
+		
+	## Data 
+	for cluster_id, row in zip(range(num_clusters), range(4, 4+num_clusters)):
+		worksheet4.write(row, 0, 'Cluster'+str(cluster_id), bold)
+		for n, col in zip(range(N), range(1, N+1)):
+			worksheet4.write(row, col, coord_mean_per_cluster_per_eigenvector[cluster_id,n], float_format)
+	
+	#########
+	
+	row = num_clusters + 5
+	worksheet4.write(row, 0, 'B.  Cluster centers returned by KMeans   ' + timestamp_string, bold)
+	
+	## Column headings
+	for n, col in zip(range(N), range(1, N+1)):
+		worksheet4.write(row+1, col, 'Eig'+str(n), bold)
+		
+	## Data 
+	for cluster_id, row in zip(range(num_clusters), range(7+num_clusters, 7+2*num_clusters)):
+		worksheet4.write(row, 0, 'Cluster'+str(cluster_id), bold)
+		for n, col in zip(range(N), range(1, N+1)):
+			worksheet4.write(row, col, cluster_centers[cluster_id,n], float_format)
 
-def eigenvector_data_for_excel(wordlist, eigenvectors, diameter, dev_output_dirname, timestamp_string, rownorm=False):
+	
+	
+	workbook.close()
+	
+def eigenvector_data_for_excel(wordlist, eigenvectors, diameter, cluster_labels, dev_output_dirname, timestamp_string, rownorm=False):
 	# AVOID EFFECT OF ',' WHEN .csv IS OPENED IN EXCEL. RESTORE ',' UPON RETURN.
 	if wordlist.count(',') > 0:
 		comma_index = wordlist.index(',')
@@ -2340,7 +2590,7 @@ def eigenvector_data_for_excel(wordlist, eigenvectors, diameter, dev_output_dirn
 	ae_rel = np.argsort(e_rel, axis=0, kind='mergesort')
 	
 	
-	print("Index, Wordlist, Diameter, Count", end='', file=outfile)
+	print("Index, Wordlist, Cluster, Diameter, Count", end='', file=outfile)
 	for n in range(N):
 		print(",Eigenvector" + str(n), end='', file=outfile)
 	print(',', end='', file=outfile)
@@ -2348,13 +2598,14 @@ def eigenvector_data_for_excel(wordlist, eigenvectors, diameter, dev_output_dirn
 		print(",", str(n) + "-rel_0", end='', file=outfile)
 	print(",,diameter", end='', file=outfile)
 	for n in range(N):
-		print(",,,,Eig" + str(n), end='', file=outfile)
+		print(",,,,Eig" + str(n) + ",Eig" + str(n) + " Clusters", end='', file=outfile)
 	for n in range(1,N):
-		print(",,,,Eig" + str(n) + " / Eig0", end='', file=outfile)
+		print(",,,,Eig" + str(n) + " / Eig0,Clusters", end='', file=outfile)
+	#print(",,Labels", file=outfile)
 	print(end ="\n", file=outfile)
 	
 	for c in range(C):
-		print(c, ',%s,' % wordlist[c], diameter[c], ',', end='', file=outfile)
+		print('%d, %s, %d, %d' % (c, wordlist[c], cluster_labels[c], diameter[c]), ',', end='', file=outfile)
 		for n in range(N):
 			print(', %.30f' % eigenvectors[c, n], end='', file=outfile)
 		print(',', end='', file=outfile)
@@ -2369,15 +2620,19 @@ def eigenvector_data_for_excel(wordlist, eigenvectors, diameter, dev_output_dirn
 		for n in range(N):
 			#indx = ae_rev[c,n]	  #CHANGED TO ASCENDING Jan. 25, 2018
 			indx = ae[c,n]
-			print(',%d, %s, %.30f,' % (indx, wordlist[indx], eigenvectors[indx,n]), end='', file=outfile) 
+			print(',%d, %s, %.30f, %d,' % (indx, wordlist[indx], eigenvectors[indx,n], cluster_labels[indx]), end='', file=outfile) 
 			
 		for n in range(1,N):
 			indx = ae_rel[c,n]
-			print(',%d, %s, %.30f,' % (indx, wordlist[indx], e_rel[indx,n]), end='', file=outfile)
+			print(',%d, %s, %.30f, %d,' % (indx, wordlist[indx], e_rel[indx,n], cluster_labels[indx]), end='', file=outfile)
+		
+		#print(",%d" % cluster_labels[c], end='', file=outfile)
 		print(end='\n', file=outfile)
 	
 	outfile.close()   #NEW  June 30, 2018
 
+	
+	# EIGS ORDERED BY Eig1
 	
 	# ADDED June 28, 2018  in Odense    probably temporary
 	if rownorm == False:
@@ -2400,11 +2655,12 @@ def eigenvector_data_for_excel(wordlist, eigenvectors, diameter, dev_output_dirn
 			print(', %.30f' % eigenvectors[c, n], end='', file=outfile2)   # NEW  June 30, 2018  
 		print(',', end='', file=outfile2)
 		
-		indx = ae[c,1]
-		print(',%d, %s' % (indx, wordlist[indx]), end='', file=outfile2)
-		for n in range(1,N):
-			print(', %.30f' % (eigenvectors[indx,n]), end='', file=outfile2)
-		print(end='\n', file=outfile2)
+		if (N>1):
+			indx = ae[c,1]
+			print(',%d, %s' % (indx, wordlist[indx]), end='', file=outfile2)
+			for n in range(1,N):
+				print(', %.30f' % (eigenvectors[indx,n]), end='', file=outfile2)
+			print(end='\n', file=outfile2)
 		
 	outfile2.close()
 	wordlist[comma_index] = ','
@@ -2467,14 +2723,17 @@ def basic_data_for_excel(wordlist, eigenvectors, atoms, header, alg_label, times
 	
 	
 
-# NOTE THAT I'M NOW SETTING n_eigenvectors    AUDREY   2017_04_06
+# NOTE THAT I'M NOW SETTING n_eigenvectors    AUDREY   2017_04_06      was n_eigenvectors=12   CHANGE CODE IN 3 PLACES
 def run(unigram_counter=None, bigram_counter=None, trigram_counter=None,
-		max_word_types=1000, n_neighbors=9, n_eigenvectors=11,
+		max_word_types=1000, n_neighbors=9, n_eigenvectors=6,
 		min_context_count=3):
 
-    dev_output_dirname = "DevOutput"
+    dev_output_dirname = "DevOutput/"     # THIS IS FOR spreadsheet PARTICULARLY spectral clustering DEVELOPMENT. o.w. my storage area
     if not os.path.exists(dev_output_dirname):
     	os.mkdir(dev_output_dirname)
+    	
+    timestamp = datetime.datetime.now()
+    timestamp_string = timestamp.strftime(".%Y_%m_%d.%H_%M")
     
     word_freq_pairs = double_sorted(unigram_counter.items(),
                                     key=lambda x: x[1], reverse=True)
@@ -2510,11 +2769,18 @@ def run(unigram_counter=None, bigram_counter=None, trigram_counter=None,
     
     #####  NOTE NOTE NOTE wordlist is modified here #####
     n_words = len(shared_ctxt_supported_wordlist)	# Safer than using shared_ctxt_supported_wordlist below
-    wordlist = shared_ctxt_supported_wordlist		# and leaving wordlist unchanged and available (for accidental misuse!)	
+    wordlist = shared_ctxt_supported_wordlist		# and leaving wordlist unchanged and available (for accidental misuse!)
     
+    
+    diameter = compute_diameter_array(n_words, shared_context_matrix)		# moved up to here  Oct. 6, 2018
+    
+    maps, sk_cluster_labels, sk_cluster_centers = spectral_clustering_using_sklearn(np.asarray(shared_context_matrix), 6, 6, 1)  # affinity_matrix, num_eigs, num_clusters, random seed for kmeans
+    generate_eigenvector_spreadsheet('sklearn', wordlist, maps, diameter, sk_cluster_labels, sk_cluster_centers, dev_output_dirname, timestamp_string, rownorm=False)
+	
+	
     # computing diameter
     #diameter = normalize(n_words, shared_context_matrix)   # diameter is an array   1000 x 1
-    diameter = compute_diameter_array(n_words, shared_context_matrix)   # diameter is an array   1000 x 1
+    #diameter = compute_diameter_array(n_words, shared_context_matrix)   # diameter is an array   1000 x 1   Moved upward Oct. 6, 2018
     #print("\ndiameter:")
     #print(diameter)   # audrey  2016_12_13
 
@@ -2540,7 +2806,7 @@ def run(unigram_counter=None, bigram_counter=None, trigram_counter=None,
     eigenvectors = eigenvectors.real        # However, eigsh returns eigenvalues (and resulting eigenvectors) in ascending order, so would require sort(). 
     
     # TEMPORARY  APRIL 27, 2018
-    #print("\n\nTEST THE INITIAL EIGENVALUE (because of concern over largest vs. smalleest)")
+    #print("\n\nTEST THE INITIAL EIGENVALUE (because of concern over largest vs. smallest)")
     #print("product of laplacian_matrix and 0th column of eigenvectors, initial entries")
     #Check0thColumn = laplacian_matrix @ eigenvectors[:,0]
     #print(Check0thColumn[0:11])
@@ -2579,7 +2845,6 @@ def run(unigram_counter=None, bigram_counter=None, trigram_counter=None,
     #print("dot product of Eig0 and Eig1 =", np.dot(eigenvectors[:,0], eigenvectors[:,1]))
     
     
-    
     # take first N columns of eigenvector matrix
     # coordinates = eigenvectors[:, : n_eigenvectors]		# AUDREY  eigenvectors matrix has n_eigenvectors columns by construction
     # print("\ncoordinates")   # audrey  2016_12_05
@@ -2591,7 +2856,6 @@ def run(unigram_counter=None, bigram_counter=None, trigram_counter=None,
     #	print("YES! eigenvectors and coordinates are same matrix", file=outfile)
     #outfile.close()
     
-    # computing distances between words
     
     # MAY 24, 2018   audrey   ROWNORM (for L_sym)                    # MINIMAL CODE CHANGES FOR FIRST TEST
     rownorm_eigenvectors = skl_normalize(eigenvectors, norm='l2') 	 # should I use csr??  Or not use skl??
@@ -2600,6 +2864,21 @@ def run(unigram_counter=None, bigram_counter=None, trigram_counter=None,
     #print(rownorm_eigenvectors[0:5, :])
     #print("Row0 norm is ", np.linalg.norm(eigenvectors[0, :]))
     #print("Row1 norm is ", np.linalg.norm(eigenvectors[1, :]))
+    
+    
+    # SEPTEMBER 26, 2018  audrey  Use k-means to cluster rows
+    kmeans_clustering = sklearn.cluster.KMeans(n_clusters=6, random_state=1).fit(eigenvectors)
+    cluster_labels = kmeans_clustering.labels_
+    cluster_centers = kmeans_clustering.cluster_centers_
+    #_, cluster_labels, _ = k_means(rownorm_eigenvectors, n_clusters=6, random_state=1)
+    rownorm_kmeans_clustering = sklearn.cluster.KMeans(n_clusters=6, random_state=1).fit(rownorm_eigenvectors)
+    rownorm_cluster_labels = rownorm_kmeans_clustering.labels_
+    rownorm_cluster_centers = rownorm_kmeans_clustering.cluster_centers_
+    for i in range(15):
+    	print(rownorm_cluster_labels[i])
+    
+    
+    # Computing distances between words
     
     #word_distances = compute_words_distance(coordinates)
     word_distances = compute_words_distance(eigenvectors)
@@ -2628,10 +2907,11 @@ def run(unigram_counter=None, bigram_counter=None, trigram_counter=None,
         words_to_neighbors[word] = neighbors
         words_to_neighbor_distances[word] = neighbor_distances
         
-    timestamp = datetime.datetime.now()
-    timestamp_string = timestamp.strftime(".%Y_%m_%d.%H_%M")
+    #timestamp = datetime.datetime.now()
+    #timestamp_string = timestamp.strftime(".%Y_%m_%d.%H_%M")
+    
     # make_heatmap(wordlist, words_to_neighbors, words_to_neighbor_distances, timestamp)  #SKIP THIS WHEN NOT NEEDED 
-    make_wordvector_plots(eigenvalues, eigenvectors, wordlist, timestamp)
+    #make_wordvector_plots(eigenvalues, eigenvectors, wordlist, timestamp)   #SKIPPING  --  August 2018
     
     ## RESOLVE
     ##sparse_repr(eigenvectors, wordlist, timestamp)   #WHAT SHAPE SHOULD THIS BE?  WHAT LENGTH? NEED TRANSLATION FROM INDICES?
@@ -2640,10 +2920,12 @@ def run(unigram_counter=None, bigram_counter=None, trigram_counter=None,
     ##investigate_atoms(wordlist, eigenvectors, atoms)
     #basic_data_for_excel(wordlist, eigenvectors, atoms, header, alg_label, timestamp)
     
-    eigenvector_data_for_excel(wordlist, eigenvectors, diameter, dev_output_dirname, timestamp_string, rownorm=False)	# May want these two also for atoms
+    #eigenvector_data_for_excel(wordlist, eigenvectors, diameter, cluster_labels, dev_output_dirname, timestamp_string, rownorm=False)	# May want these two also for atoms  
+    generate_eigenvector_spreadsheet('Chicago', wordlist, eigenvectors, diameter, cluster_labels, cluster_centers, dev_output_dirname, timestamp_string, rownorm=False)
     eigenvector_plots(wordlist, eigenvectors, timestamp_string)
     eig0_diameter_ascending_plots(sorted(eigenvectors[:,0]), sorted(diameter), timestamp_string)
-    eigenvector_data_for_excel(wordlist, rownorm_eigenvectors, diameter, dev_output_dirname, timestamp_string, rownorm=True)
+    generate_eigenvector_spreadsheet('Chicago', wordlist, rownorm_eigenvectors, diameter, rownorm_cluster_labels, rownorm_cluster_centers, dev_output_dirname, timestamp_string, rownorm=True)
+    #eigenvector_data_for_excel(wordlist, rownorm_eigenvectors, diameter, cluster_labels, cluster_centers, dev_output_dirname, timestamp_string, rownorm=True)
     
     #outfilename = 'count.csv'
     #outfile = open(outfilename, mode='w')
