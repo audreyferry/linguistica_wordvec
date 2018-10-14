@@ -2308,9 +2308,12 @@ def spectral_clustering_using_sklearn(affinity_matrix, num_eigenvectors, num_clu
 	
 	# N.B. In spectral_embedding definition, norm_laplacian = True  and eigen_solver='arpack' by default.
 	maps = spectral_embedding(affinity_matrix, n_components=num_eigenvectors, drop_first=False)
+	maps = skl_normalize(maps, norm='l2', axis=0)   ##### UNIT MAPS  FOR INVESTIGATING EFFECT   Oct.  9, 2018
+	##################################################### DECIDED THAT INTENT IS UNIT VECTORS   Oct. 12, 2018
 	
 	# Use the object-oriented version for access to cluster centers.
 	kmeans_clustering = sklearn.cluster.KMeans(n_clusters=num_clusters, random_state=kmeans_random_state).fit(maps)
+	#kmeans_clustering = sklearn.cluster.KMeans(n_clusters=num_clusters, random_state=kmeans_random_state, n_init=1, max_iter=1).fit(maps)
 	cluster_labels = kmeans_clustering.labels_
 	cluster_centers = kmeans_clustering.cluster_centers_
 	
@@ -2339,9 +2342,9 @@ def generate_eigenvector_spreadsheet(source, wordlist, eigenvectors, diameter, c
 	
 	# USING xlsxwriter
 	if rownorm == False:
-		workbook = xlsxwriter.Workbook(dev_output_dirname + source + ".eigenvector_data_for_excel." + timestamp_string + ".xlsx")
+		workbook = xlsxwriter.Workbook(dev_output_dirname + source + ".eig_data" + timestamp_string + ".xlsx")
 	else:
-		workbook = xlsxwriter.Workbook(dev_output_dirname + source + ".rownorm_eigenvector_data_for_excel." + timestamp_string + ".xlsx")
+		workbook = xlsxwriter.Workbook(dev_output_dirname + source + ".rownorm_eig_data" + timestamp_string + ".xlsx")
 		
 	bold = workbook.add_format({'bold': True})
 	float_format = workbook.add_format({'num_format':'0.00000000'})
@@ -2390,9 +2393,20 @@ def generate_eigenvector_spreadsheet(source, wordlist, eigenvectors, diameter, c
 	##############
 	# WORKSHEET2 #
 	##############
+	## SORT EACH EIGENVECTOR FIRST BY COORD VALUE (INCREASING), THEN BY CLUSTER, USING LEXSORT
+	lex_sortation = np.ones((C,N), dtype=int)        # C x N matrix
+	lex_sortation_rel = np.ones((C,N), dtype=int)    # C x N matrix     disregard leftmost column
+	
+	for n in range(N):
+		lex_sortation[:,n] = np.lexsort((cluster_labels, eigenvectors[:,n]))
+	
+	for n in range(1,N):
+		lex_sortation_rel[:,n] = np.lexsort((cluster_labels, eig_rel[:,n]))
+	
+	
 	## SORT EACH EIGENVECTOR BY COORD VALUE (INCREASING), USING ARGSORT 
-	arg_sortation = np.argsort(eigenvectors, axis=0, kind='mergesort')    # C x N matrix
-	arg_sortation_rel =  np.argsort(eig_rel, axis=0, kind='mergesort')    # also C x N, disregard leftmost column
+	#arg_sortation = np.argsort(eigenvectors, axis=0, kind='mergesort')    # C x N matrix
+	#arg_sortation_rel =  np.argsort(eig_rel, axis=0, kind='mergesort')    # also C x N, disregard leftmost column
 	
 	
 	# Default value for column width is too small to display desired number of digits.
@@ -2418,11 +2432,13 @@ def generate_eigenvector_spreadsheet(source, wordlist, eigenvectors, diameter, c
 	for c in range(C):
 		row = c + 1
 		
-		indx = arg_sortation[c,0]
+		indx = lex_sortation[c,0]
+		#indx = arg_sortation[c,0]
 		worksheet2.write(row, 0, diameter[indx])
 		
 		for n in range(N):
-			indx = arg_sortation[c,n]
+			#indx = arg_sortation[c,n]
+			indx = lex_sortation[c,n]
 			col = 1+n*5
 			worksheet2.write(row, col, indx)
 			worksheet2.write(row, col+1, wordlist[indx])
@@ -2430,7 +2446,8 @@ def generate_eigenvector_spreadsheet(source, wordlist, eigenvectors, diameter, c
 			worksheet2.write(row, col+3, cluster_labels[indx])
 			
 		for n in range(1,N):
-			indx = arg_sortation_rel[c,n]
+			#indx = arg_sortation_rel[c,n]
+			indx = lex_sortation_rel[c,n]
 			col = 1 + N*5 + (n-1)*5
 			worksheet2.write(row, col, indx)
 			worksheet2.write(row, col+1, wordlist[indx])
@@ -2449,7 +2466,7 @@ def generate_eigenvector_spreadsheet(source, wordlist, eigenvectors, diameter, c
 		lex_sortation[:,n] = np.lexsort((eigenvectors[:,n], cluster_labels))
 		
 	for n in range(1,N):
-		lex_sortation_rel[:,n] = np.lexsort((eig_rel[:,n], cluster_labels))
+		
 	
 	
 	# xlsxwriter instructions are similar to those for Worksheet2, above
@@ -2725,7 +2742,7 @@ def basic_data_for_excel(wordlist, eigenvectors, atoms, header, alg_label, times
 
 # NOTE THAT I'M NOW SETTING n_eigenvectors    AUDREY   2017_04_06      was n_eigenvectors=12   CHANGE CODE IN 3 PLACES
 def run(unigram_counter=None, bigram_counter=None, trigram_counter=None,
-		max_word_types=1000, n_neighbors=9, n_eigenvectors=6,
+		max_word_types=1000, n_neighbors=9, n_eigenvectors=12,
 		min_context_count=3):
 
     dev_output_dirname = "DevOutput/"     # THIS IS FOR spreadsheet PARTICULARLY spectral clustering DEVELOPMENT. o.w. my storage area
@@ -2774,7 +2791,7 @@ def run(unigram_counter=None, bigram_counter=None, trigram_counter=None,
     
     diameter = compute_diameter_array(n_words, shared_context_matrix)		# moved up to here  Oct. 6, 2018
     
-    maps, sk_cluster_labels, sk_cluster_centers = spectral_clustering_using_sklearn(np.asarray(shared_context_matrix), 6, 6, 1)  # affinity_matrix, num_eigs, num_clusters, random seed for kmeans
+    maps, sk_cluster_labels, sk_cluster_centers = spectral_clustering_using_sklearn(np.asarray(shared_context_matrix), 12, 12, 1)  # affinity_matrix, num_eigs, num_clusters, random seed for kmeans
     generate_eigenvector_spreadsheet('sklearn', wordlist, maps, diameter, sk_cluster_labels, sk_cluster_centers, dev_output_dirname, timestamp_string, rownorm=False)
 	
 	
@@ -2866,12 +2883,14 @@ def run(unigram_counter=None, bigram_counter=None, trigram_counter=None,
     #print("Row1 norm is ", np.linalg.norm(eigenvectors[1, :]))
     
     
-    # SEPTEMBER 26, 2018  audrey  Use k-means to cluster rows
-    kmeans_clustering = sklearn.cluster.KMeans(n_clusters=6, random_state=1).fit(eigenvectors)
+    # SEPTEMBER 26, 2018  audrey  Use k-means to cluster rows    (for Chicago spreadsheet)
+    kmeans_clustering = sklearn.cluster.KMeans(n_clusters=12, random_state=1).fit(eigenvectors)
+    #kmeans_clustering = sklearn.cluster.KMeans(n_clusters=12, random_state=1, n_init=1, max_iter=1).fit(eigenvectors)  # SIMPLEST
     cluster_labels = kmeans_clustering.labels_
     cluster_centers = kmeans_clustering.cluster_centers_
     #_, cluster_labels, _ = k_means(rownorm_eigenvectors, n_clusters=6, random_state=1)
-    rownorm_kmeans_clustering = sklearn.cluster.KMeans(n_clusters=6, random_state=1).fit(rownorm_eigenvectors)
+    rownorm_kmeans_clustering = sklearn.cluster.KMeans(n_clusters=12, random_state=1).fit(rownorm_eigenvectors)
+    #rownorm_kmeans_clustering = sklearn.cluster.KMeans(n_clusters=12, random_state=1, n_init=1, max_iter=1).fit(rownorm_eigenvectors)    # SIMPLEST
     rownorm_cluster_labels = rownorm_kmeans_clustering.labels_
     rownorm_cluster_centers = rownorm_kmeans_clustering.cluster_centers_
     for i in range(15):
