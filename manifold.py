@@ -14,8 +14,11 @@ import sklearn
 from sklearn.preprocessing import normalize as skl_normalize
 from sklearn.decomposition import DictionaryLearning, sparse_encode
 from sklearn.decomposition import FastICA
-from sklearn.cluster       import spectral_clustering, k_means
-from sklearn.manifold      import spectral_embedding
+from sklearn.cluster       import spectral_clustering, k_means   #lifted, so may not need spectral_clustering     
+from sklearn.manifold      import spectral_embedding             #lifted, so may not need spectral_embedding
+from sklearn.utils.extmath import _deterministic_vector_sign_flip
+from scipy.sparse.csgraph  import laplacian as csgraph_laplacian
+
 import numpy as np
 import networkx as nx
 
@@ -2302,22 +2305,42 @@ def plot_as_specified(x, y, clr, title_string, scatter=False, ylimits=None):
 	plt.close(fig)
 	
 	
-def spectral_clustering_using_sklearn(affinity_matrix, num_eigenvectors, num_clusters, kmeans_random_state):  
+def sk_lifted_spectral_clustering(affinity_matrix, num_eigenvectors, num_clusters, kmeans_random_state):
+	# see note below about possibly using sparse affinity_matrix
 	# latter 3 args could be kwargs, for clarity. 
 	# Other kwargs for sklearn functions used within this function are omitted as not likely to be used.
 	
 	# N.B. In spectral_embedding definition, norm_laplacian = True  and eigen_solver='arpack' by default.
-	maps = spectral_embedding(affinity_matrix, n_components=num_eigenvectors, drop_first=False)
-	maps = skl_normalize(maps, norm='l2', axis=0)   ##### UNIT MAPS  FOR INVESTIGATING EFFECT   Oct.  9, 2018
-	##################################################### DECIDED THAT INTENT IS UNIT VECTORS   Oct. 12, 2018
+	#maps = spectral_embedding_aus_sklearn(affinity_matrix, n_components=num_eigenvectors, drop_first=False)
+	#maps = spectral_embedding(affinity_matrix, n_components=num_eigenvectors, drop_first=False)
+	#maps = skl_normalize(maps, norm='l2', axis=0)   ##### UNIT MAPS  FOR INVESTIGATING EFFECT   Oct.  9, 2018
+	##################################################### DECIDED THAT INTENT IS UNIT VECTORS   Oct. 12, 2018	
+	
+	# Our affinity matrix  scm_csr  is sparse.  Returns laplacian as a numpy (dense) array. 
+	# I'd rather give it dense affinity.  But try with sparse, since there was an issue needing np.asarrau
+	laplacian, dd = csgraph_laplacian(affinity_matrix, normed=True, return_diag=True)   # returns L_sym
+	laplacian_sparse = sparse.csr_matrix(laplacian)
+	eigenvalues, eigenvectors = linalg.eigsh(laplacian_sparse, k=num_eigenvectors, which='SM')  #N.B. eigs complex; eigsh not
+	
+	# TEMPORARY - TO CHECK NEW CODE (extraction) AGAINST PREVIOUS BUT RECENT (i.e., sklearn 20.0)
+	# APPROACH L_rw. Not necessarily temporary. sklearn and Chicago match on this.
+	eigenvectors = eigenvectors / dd[:, np.newaxis]
+	eigenvectors = skl_normalize(eigenvectors, norm='l2', axis=0)
+	
+	# APPROACH L_sym.
+	# NOTE THAT THE EIGENVECTORS THEMSELVES ARE UNIT LENGTH AS RETURNED FROM linalg.eigsh. NEXT LINE IS FOR ROWS.
+	#eigenvectors = skl_normalize(eigenvectors, norm='l2', axis=1)
+	
+	# STANDARDIZE DIRECTION apply this to the eigenvectors in whatever form is about to be submitted to clustering algorithm
+	eigenvectors = (_deterministic_vector_sign_flip(eigenvectors.T)).T
 	
 	# Use the object-oriented version for access to cluster centers.
-	kmeans_clustering = sklearn.cluster.KMeans(n_clusters=num_clusters, random_state=kmeans_random_state).fit(maps)
+	kmeans_clustering = sklearn.cluster.KMeans(n_clusters=num_clusters, random_state=kmeans_random_state).fit(eigenvectors)
 	#kmeans_clustering = sklearn.cluster.KMeans(n_clusters=num_clusters, random_state=kmeans_random_state, n_init=1, max_iter=1).fit(maps)
 	cluster_labels = kmeans_clustering.labels_
 	cluster_centers = kmeans_clustering.cluster_centers_
 	
-	return maps, cluster_labels, cluster_centers    # CONDENSE THIS
+	return eigenvectors, cluster_labels, cluster_centers    # CONDENSE THIS
 	
 	
 def generate_eigenvector_spreadsheet(source, wordlist, eigenvectors, diameter, cluster_labels, cluster_centers, dev_output_dirname, timestamp_string, rownorm=False):
@@ -2466,7 +2489,7 @@ def generate_eigenvector_spreadsheet(source, wordlist, eigenvectors, diameter, c
 		lex_sortation[:,n] = np.lexsort((eigenvectors[:,n], cluster_labels))
 		
 	for n in range(1,N):
-		
+		lex_sortation_rel[:,n] = np.lexsort((eig_rel[:,n], cluster_labels))
 	
 	
 	# xlsxwriter instructions are similar to those for Worksheet2, above
@@ -2791,8 +2814,8 @@ def run(unigram_counter=None, bigram_counter=None, trigram_counter=None,
     
     diameter = compute_diameter_array(n_words, shared_context_matrix)		# moved up to here  Oct. 6, 2018
     
-    maps, sk_cluster_labels, sk_cluster_centers = spectral_clustering_using_sklearn(np.asarray(shared_context_matrix), 12, 12, 1)  # affinity_matrix, num_eigs, num_clusters, random seed for kmeans
-    generate_eigenvector_spreadsheet('sklearn', wordlist, maps, diameter, sk_cluster_labels, sk_cluster_centers, dev_output_dirname, timestamp_string, rownorm=False)
+    sk_eigenvectors, sk_cluster_labels, sk_cluster_centers = sk_lifted_spectral_clustering(np.asarray(shared_context_matrix), 12, 12, 1)  # affinity_matrix, num_eigs, num_clusters, random seed for kmeans
+    generate_eigenvector_spreadsheet('sklearn', wordlist, sk_eigenvectors, diameter, sk_cluster_labels, sk_cluster_centers, dev_output_dirname, timestamp_string, rownorm=False)
 	
 	
     # computing diameter
@@ -2822,6 +2845,12 @@ def run(unigram_counter=None, bigram_counter=None, trigram_counter=None,
     eigenvalues = eigenvalues.real			# AUDREY  Could be handled within compute_eigenvectors by using eigsh instead of eigs.
     eigenvectors = eigenvectors.real        # However, eigsh returns eigenvalues (and resulting eigenvectors) in ascending order, so would require sort(). 
     
+    # MODIFY L_sym EIGENVECTORS TO GET L_rw EIGENVECTORS
+    sqrt_diameter = np.sqrt(diameter)
+    eigenvectors = eigenvectors / sqrt_diameter[:, np.newaxis]
+    eigenvectors = skl_normalize(eigenvectors, norm='l2', axis=0)
+    
+    
     # TEMPORARY  APRIL 27, 2018
     #print("\n\nTEST THE INITIAL EIGENVALUE (because of concern over largest vs. smallest)")
     #print("product of laplacian_matrix and 0th column of eigenvectors, initial entries")
@@ -2835,22 +2864,25 @@ def run(unigram_counter=None, bigram_counter=None, trigram_counter=None,
     
     del laplacian_matrix
     
-    print("\nSTANDARDIZE EIGENVECTORS wrt SIGN")
-    print("eigenvalues:", eigenvalues)
-    sum_vec  = np.sum(eigenvectors, axis=0)
-    print("sum_vec (initially):", sum_vec)
-    for i in range(len(sum_vec)):
-    	if sum_vec[i] < 0:
-    		eigenvectors[:,i] = -1 * eigenvectors[:,i]
-    sum_vec  = np.sum(eigenvectors, axis=0)
-    print("sum_vec (after standardizing):", sum_vec)
-	
-    test_ind = wordlist.index('the')
-    test_vec = eigenvectors[test_ind, :]
-    #print("eigenvalues:", eigenvalues)		# SHOW onscreen
-    print("test_vec (resulting coords for 'the'):", test_vec)		# standardize to  (positive, negative) coordinates for 'the'
-    print()
     
+    ## SECOND STANDARDIZATION CODE   replaced by _deterministic_vector_sign_flip 2018_10_22 (below)
+    #print("\nSTANDARDIZE EIGENVECTORS wrt SIGN")
+    #print("eigenvalues:", eigenvalues)
+    #sum_vec  = np.sum(eigenvectors, axis=0)
+    #print("sum_vec (initially):", sum_vec)
+    #for i in range(len(sum_vec)):
+    #	if sum_vec[i] < 0:
+    #		eigenvectors[:,i] = -1 * eigenvectors[:,i]
+    #sum_vec  = np.sum(eigenvectors, axis=0)
+    #print("sum_vec (after standardizing):", sum_vec)
+	#
+    #test_ind = wordlist.index('the')
+    #test_vec = eigenvectors[test_ind, :]
+    ##print("eigenvalues:", eigenvalues)		# SHOW onscreen
+    #print("test_vec (resulting coords for 'the'):", test_vec)		# standardize to  (positive, negative) coordinates for 'the'
+    #print()
+    
+    # FIRST STANDARDIZATION CODE
     #if (test_vec[0] < 0):
     #	eigenvectors[:,0] = -1 * eigenvectors[:,0]
     #if (test_vec[1] > 0):
@@ -2875,13 +2907,17 @@ def run(unigram_counter=None, bigram_counter=None, trigram_counter=None,
     
     
     # MAY 24, 2018   audrey   ROWNORM (for L_sym)                    # MINIMAL CODE CHANGES FOR FIRST TEST
-    rownorm_eigenvectors = skl_normalize(eigenvectors, norm='l2') 	 # should I use csr??  Or not use skl??
+    rownorm_eigenvectors = skl_normalize(eigenvectors, norm='l2') 	 # makes each ROW unit length # should I use csr??  Or not use skl??
     ### eigenvectors = rownorm_eigenvectors       NO !!              # FOR NOW -- AT LEAST FIRST TEST. SPARSE??
-    #print("Eigenvector matrix row_normalized:\n")
+    #print("\nEigenvector matrix row_normalized:\n")
     #print(rownorm_eigenvectors[0:5, :])
-    #print("Row0 norm is ", np.linalg.norm(eigenvectors[0, :]))
-    #print("Row1 norm is ", np.linalg.norm(eigenvectors[1, :]))
+    #print("Row0 norm of input is ", np.linalg.norm(eigenvectors[0, :]))
+    #print("Row1 norm of input is ", np.linalg.norm(eigenvectors[1, :]))
     
+    
+    # STANDARDIZE DIRECTION apply this to the eigenvectors in whatever form is about to be submitted to clustering algorithm
+    eigenvectors = (_deterministic_vector_sign_flip(eigenvectors.T)).T
+    rownorm_eigenvectors = (_deterministic_vector_sign_flip(rownorm_eigenvectors.T)).T
     
     # SEPTEMBER 26, 2018  audrey  Use k-means to cluster rows    (for Chicago spreadsheet)
     kmeans_clustering = sklearn.cluster.KMeans(n_clusters=12, random_state=1).fit(eigenvectors)
