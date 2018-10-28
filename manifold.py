@@ -351,7 +351,7 @@ def compute_diameter_array(n_words, shared_context_matrix):
     for word_no in range(n_words):
         arr[word_no] = np.sum(shared_context_matrix[word_no,:]) - \
                        shared_context_matrix[word_no, word_no]
-    return arr
+    return arr   # NOTE. 
 
 
 def compute_incidence_graph(n_words, diameter, shared_context_matrix):
@@ -2305,6 +2305,57 @@ def plot_as_specified(x, y, clr, title_string, scatter=False, ylimits=None):
 	plt.close(fig)
 	
 	
+	
+def Chicago_get_laplacian(affinity_matrix):
+	n_words = affinity_matrix.shape[0]
+	diam_array = compute_diameter_array(n_words, affinity_matrix)		# Revise - omit n_words parameter
+	incidence_graph = compute_incidence_graph(n_words, diam_array, affinity_matrix)
+	laplacian_matrix = compute_laplacian(diam_array, incidence_graph)
+	del incidence_graph
+	return laplacian_matrix, np.sqrt(diam_array)
+	
+	
+def spectral_clustering_sym(eigenvectors, random_seed=None):
+	# For any matrix named as eigenvectors_xxx in this program, 
+    #  each column is an eigenvector of some particular sort of laplacian
+    #  each row represents a word as a tuple in that coordinate system
+	
+	# Step 1: Obtain eigenvectors of L_sym
+	eigenvectors_sym = eigenvectors	  # At input, columns are L_sym unit-length eigenvectors.
+	
+	# Step 2: Get the word vectors for clustering 
+	wordcoords_sym = skl_normalize(eigenvectors_sym, norm='l2', axis=1)		# row => unit-length
+	
+	# Step 3: apply clustering algorithm
+	# Use the object-oriented version for access to cluster centers. Mostly we take the default parameter values.
+	kmeans_clustering = sklearn.cluster.KMeans(n_clusters=eigenvectors.shape[1], random_state=random_seed).fit(wordcoords_sym)
+	clusterlabels  = kmeans_clustering.labels_
+	clustercenters = kmeans_clustering.cluster_centers_
+	
+	return wordcoords_sym, clusterlabels, clustercenters
+	
+def spectral_clustering_rw(eigenvectors, sqrt_diam, random_seed=None):
+	# For any matrix named as eigenvectors_xxx in this program, 
+    #  each column is an eigenvector of some particular sort of laplacian
+    #  each row represents a word as a tuple in that coordinate system
+	
+	# Step 1: Obtain eigenvectors of L_rw
+	eigenvectors_rw = eigenvectors / sqrt_diam[:, np.newaxis]			# At input, columns are L_sym unit-length eigenvectors.
+	eigenvectors_rw = skl_normalize( eigenvectors_rw, norm='l2', axis=0 )   # Consider this
+	
+	# Step 2: Get the word vectors for clustering 
+	wordcoords_rw = eigenvectors_rw		# algorithm does not call for row-based modification
+	
+	# Step 3: apply clustering algorithm
+	# Use the object-oriented version for access to cluster centers. Mostly we take the default parameter values.
+	kmeans_clustering = sklearn.cluster.KMeans(n_clusters=eigenvectors.shape[1], random_state=random_seed).fit(wordcoords_rw)
+	clusterlabels  = kmeans_clustering.labels_
+	clustercenters = kmeans_clustering.cluster_centers_
+	
+	return wordcoords_rw, clusterlabels, clustercenters
+	
+
+# Not in use in this form
 def sk_lifted_spectral_clustering(affinity_matrix, num_eigenvectors, num_clusters, kmeans_random_state):
 	# see note below about possibly using sparse affinity_matrix
 	# latter 3 args could be kwargs, for clarity. 
@@ -2332,7 +2383,7 @@ def sk_lifted_spectral_clustering(affinity_matrix, num_eigenvectors, num_cluster
 	#eigenvectors = skl_normalize(eigenvectors, norm='l2', axis=1)
 	
 	# STANDARDIZE DIRECTION apply this to the eigenvectors in whatever form is about to be submitted to clustering algorithm
-	eigenvectors = (_deterministic_vector_sign_flip(eigenvectors.T)).T
+	eigenvectors = (_deterministic_vector_sign_flip(eigenvectors.T)).T  # Probably not right; at this point they're not eigenvectors.
 	
 	# Use the object-oriented version for access to cluster centers.
 	kmeans_clustering = sklearn.cluster.KMeans(n_clusters=num_clusters, random_state=kmeans_random_state).fit(eigenvectors)
@@ -2343,18 +2394,12 @@ def sk_lifted_spectral_clustering(affinity_matrix, num_eigenvectors, num_cluster
 	return eigenvectors, cluster_labels, cluster_centers    # CONDENSE THIS
 	
 	
-def generate_eigenvector_spreadsheet(source, wordlist, eigenvectors, diameter, cluster_labels, cluster_centers, dev_output_dirname, timestamp_string, rownorm=False):
-	# Now handled through xlsxwriter below
-	# OUTPUT TO FILE
-	#if rownorm == False:
-	#	outfilename = dev_output_dirname + source + ".eigenvector_data_for_excel." + timestamp_string + ".csv"
-	#else:
-	#	outfilename = dev_output_dirname + source + ".rownorm_eigenvector_data_for_excel." + timestamp_string + ".csv"
-		
-	#outfile = open(outfilename, mode='w')
-	#print(file=outfile)
+	
+def generate_eigenvector_spreadsheet(algorithm, eigenvectors, cluster_labels, cluster_centers, wordlist, diameter, output_dir, timestamp_string):
+	# Now handled through xlsxwriter
 	
 	# PRELIMINARIES
+	
 	C = len(wordlist)
 	N = eigenvectors.shape[1]         # dimension of wordvector space = number of eigenvectors
 	
@@ -2364,10 +2409,7 @@ def generate_eigenvector_spreadsheet(source, wordlist, eigenvectors, diameter, c
 	
 	
 	# USING xlsxwriter
-	if rownorm == False:
-		workbook = xlsxwriter.Workbook(dev_output_dirname + source + ".eig_data" + timestamp_string + ".xlsx")
-	else:
-		workbook = xlsxwriter.Workbook(dev_output_dirname + source + ".rownorm_eig_data" + timestamp_string + ".xlsx")
+	workbook = xlsxwriter.Workbook(output_dir + algorithm + ".eig_data" + timestamp_string + ".xlsx")
 		
 	bold = workbook.add_format({'bold': True})
 	float_format = workbook.add_format({'num_format':'0.00000000'})
@@ -2421,10 +2463,10 @@ def generate_eigenvector_spreadsheet(source, wordlist, eigenvectors, diameter, c
 	lex_sortation_rel = np.ones((C,N), dtype=int)    # C x N matrix     disregard leftmost column
 	
 	for n in range(N):
-		lex_sortation[:,n] = np.lexsort((cluster_labels, eigenvectors[:,n]))
+		lex_sortation[:,n] = np.lexsort((diameter, cluster_labels, eigenvectors[:,n]))
 	
 	for n in range(1,N):
-		lex_sortation_rel[:,n] = np.lexsort((cluster_labels, eig_rel[:,n]))
+		lex_sortation_rel[:,n] = np.lexsort((diameter, cluster_labels, eig_rel[:,n]))
 	
 	
 	## SORT EACH EIGENVECTOR BY COORD VALUE (INCREASING), USING ARGSORT 
@@ -2438,7 +2480,7 @@ def generate_eigenvector_spreadsheet(source, wordlist, eigenvectors, diameter, c
 	worksheet2.set_column(0, (2*N-1)*5-1, 11)		# 1st column, last column, width 
 	
 	## Column headings
-	worksheet2.write(0, 0, 'diameter', bold)
+	worksheet2.write(0, 0, 'Diameter', bold)
 	
 	for n in range(N):
 		col = 1 + n*5
@@ -2486,10 +2528,10 @@ def generate_eigenvector_spreadsheet(source, wordlist, eigenvectors, diameter, c
 	lex_sortation_rel = np.ones((C,N), dtype=int)    # C x N matrix     disregard leftmost column
 	
 	for n in range(N):
-		lex_sortation[:,n] = np.lexsort((eigenvectors[:,n], cluster_labels))
+		lex_sortation[:,n] = np.lexsort((diameter, eigenvectors[:,n], cluster_labels))
 		
 	for n in range(1,N):
-		lex_sortation_rel[:,n] = np.lexsort((eig_rel[:,n], cluster_labels))
+		lex_sortation_rel[:,n] = np.lexsort((diameter, eig_rel[:,n], cluster_labels))
 	
 	
 	# xlsxwriter instructions are similar to those for Worksheet2, above
@@ -2549,10 +2591,10 @@ def generate_eigenvector_spreadsheet(source, wordlist, eigenvectors, diameter, c
 			coord_mean_per_cluster_per_eigenvector[cluster_id,n] = \
 				coord_sum_per_cluster_per_eigenvector[cluster_id,n] / card_per_cluster[cluster_id]
 				
-	for cluster_id in range(num_clusters):
-		print("Cluster id =", cluster_id)
-		for n in range(N):
-			print(coord_mean_per_cluster_per_eigenvector[cluster_id,n])
+	#for cluster_id in range(num_clusters):
+	#	print("Cluster id =", cluster_id)
+	#	for n in range(N):
+	#		print(coord_mean_per_cluster_per_eigenvector[cluster_id,n])
 			
 	## XlsxWriter instructions
 	worksheet4.set_column(0, N+1, 11)	#set column width
@@ -2590,6 +2632,8 @@ def generate_eigenvector_spreadsheet(source, wordlist, eigenvectors, diameter, c
 	
 	workbook.close()
 	
+
+# Not in use   October 2018
 def eigenvector_data_for_excel(wordlist, eigenvectors, diameter, cluster_labels, dev_output_dirname, timestamp_string, rownorm=False):
 	# AVOID EFFECT OF ',' WHEN .csv IS OPENED IN EXCEL. RESTORE ',' UPON RETURN.
 	if wordlist.count(',') > 0:
@@ -2675,10 +2719,7 @@ def eigenvector_data_for_excel(wordlist, eigenvectors, diameter, cluster_labels,
 	# EIGS ORDERED BY Eig1
 	
 	# ADDED June 28, 2018  in Odense    probably temporary
-	if rownorm == False:
-		outfilename2 = "eigs_ordered_by_Eig1" + timestamp_string + ".csv"
-	else:
-		outfilename2 = "rownorm_eigs_ordered_by_Eig1" + timestamp_string + ".csv"
+	outfilename2 = "eigs_ordered_by_Eig1" + timestamp_string + ".csv"
 	outfile2 = open(outfilename2, mode='w')
 	
 	print("Index, Wordlist, Diameter, Count", end='', file=outfile2)
@@ -2706,6 +2747,7 @@ def eigenvector_data_for_excel(wordlist, eigenvectors, diameter, cluster_labels,
 	wordlist[comma_index] = ','
 	
 
+# Not in use
 def basic_data_for_excel(wordlist, eigenvectors, atoms, header, alg_label, timestamp): #IF USE, REMEMBER %.30f
 	# OUTPUT TO FILE     
 	outfilename = "data_for_excel." + alg_label + "." + timestamp.strftime("%Y_%m_%d.%H_%M") + ".csv"
@@ -2763,14 +2805,19 @@ def basic_data_for_excel(wordlist, eigenvectors, atoms, header, alg_label, times
 	
 	
 
-# NOTE THAT I'M NOW SETTING n_eigenvectors    AUDREY   2017_04_06      was n_eigenvectors=12   CHANGE CODE IN 3 PLACES
+
+
+
+
+# NOTE THAT I'M NOW SETTING n_eigenvectors    AUDREY   2017_04_06
+# These values are default settings. The real values come from the startup settings.
 def run(unigram_counter=None, bigram_counter=None, trigram_counter=None,
-		max_word_types=1000, n_neighbors=9, n_eigenvectors=12,
+		max_word_types=1000, n_neighbors=9, n_eigenvectors=11,
 		min_context_count=3):
 
-    dev_output_dirname = "DevOutput/"     # THIS IS FOR spreadsheet PARTICULARLY spectral clustering DEVELOPMENT. o.w. my storage area
-    if not os.path.exists(dev_output_dirname):
-    	os.mkdir(dev_output_dirname)
+    output_dir = "DevOutput/"     # THIS IS FOR spreadsheet PARTICULARLY spectral clustering DEVELOPMENT. o.w. my storage area
+    if not os.path.exists(output_dir):
+    	os.mkdir(output_dir)
     	
     timestamp = datetime.datetime.now()
     timestamp_string = timestamp.strftime(".%Y_%m_%d.%H_%M")
@@ -2812,6 +2859,47 @@ def run(unigram_counter=None, bigram_counter=None, trigram_counter=None,
     wordlist = shared_ctxt_supported_wordlist		# and leaving wordlist unchanged and available (for accidental misuse!)
     
     
+    
+    laplacian, sqrt_diam = csgraph_laplacian(shared_context_matrix, normed=True, return_diag=True)   # returns L_sym
+    #laplacian, sqrt_diam = Chicago_get_laplacian(shared_context_matrix)
+    diameter = np.square(sqrt_diam)
+    
+    eigenvalues, eigenvectors = linalg.eigsh(laplacian, k=n_eigenvectors, which='SM')  #N.B. eigs complex; eigsh not
+    eigenvectors = (_deterministic_vector_sign_flip(eigenvectors.T)).T                 #standardization convention; no other effect
+    
+    # Alternative algorithms   ref. Ulrike von Luxburg. A Tutorial on Spectral Clustering. 
+    # These alternatives are organized as separate functions for clarity and ease of separate modification.
+    wordcoords_sym, clusterlabels_sym, clustercenters_sym = spectral_clustering_sym(eigenvectors, random_seed=1)
+    generate_eigenvector_spreadsheet('sym', wordcoords_sym, clusterlabels_sym, clustercenters_sym,
+                                     wordlist, diameter, output_dir, timestamp_string)
+    
+    wordcoords_rw, clusterlabels_rw, clustercenters_rw = spectral_clustering_rw(eigenvectors, sqrt_diam, random_seed=1)
+    generate_eigenvector_spreadsheet('rw', wordcoords_rw, clusterlabels_rw, clustercenters_rw,
+                                     wordlist, diameter, output_dir, timestamp_string)
+    
+    raise SystemExit    # October 26, 2018
+    
+    ### OMIT
+    eigenvectors_sym = eigenvectors   # Does this preserve eigenvectors for Jackson's use later? Consider options.
+    eigenvectors_rw  = skl_normalize( (eigenvectors_sym / sqrtdiam_array[:, np.newaxis]), norm='l2', axis=0 )
+    
+    
+    # In eigenvectors matrix, 
+    #  each column is a unit-length eigenvector of laplacian (L_sym or L_rw)
+    #  each row represents a word as a tuple in that coordinate system 
+    
+    samples_to_cluster_sym = skl_normalize(eigenvectors_sym, norm='l2', axis=1)		# row => unit-length  
+    samples_to_cluster_rw  = eigenvectors_rw
+    
+    
+    #Keep going. Test as soon as possible.
+    
+    ### OMIT
+    # May try with sparse affinity matrix  scm_csr, since there was an issue needing np.asarrau
+    eigenvectors, sqrtdiam_array = sk_lifted_spectral_embedding(np.asarray(shared_context_matrix), n_eigenvectors)
+    #eigenvectors, sqrtdiam_array = Chicago_spectral_embedding(np.asarray(shared_context_matrix), n_eigenvectors)
+    
+    ### OMIT
     diameter = compute_diameter_array(n_words, shared_context_matrix)		# moved up to here  Oct. 6, 2018
     
     sk_eigenvectors, sk_cluster_labels, sk_cluster_centers = sk_lifted_spectral_clustering(np.asarray(shared_context_matrix), 12, 12, 1)  # affinity_matrix, num_eigs, num_clusters, random seed for kmeans
