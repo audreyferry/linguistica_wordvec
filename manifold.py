@@ -265,7 +265,7 @@ def get_context_array(wordlist, bigram_to_freq, trigram_to_freq,
     ctxt_supported_wordlist = [word for word in wordlist if list(words_to_contexts[word]) != [] ]
     if verbose:
     	print("\nctxt_supported_wordlist is those words from original wordlist with at least one acceptable context.")
-    	print("len(ctxt_supported_wordlist) =", len(ctxt_supported_wordlist)) 
+    	print("lctxt_supported_wordlist) =", len(ctxt_supported_wordlist)) 
 
     # RECORD words_to_contexts AND contexts_to_words DICTIONARIES FOR USE BY STANDALONE PROGRAMS
     #outfile_wtoc_jsonpickle_name = "words_to_contexts_jsonpickle.txt"
@@ -2178,7 +2178,158 @@ def investigate_atoms(wordlist, eigenvectors, atoms, num_neighbors=20):
 		print(word, ": \t", neighbors)
 	
 	
+def eigenvector_clusterwise_plots(algorithm, eigenvectors, cluster_labels, diameter, output_dir, timestamp_string):
 	
+	# Purpose: understand and improve clustering.
+	# For each eigenvector, plot entries sorted first by cluster label, then within each cluster as follows: 
+	#    a - by value (incr)             
+	#    b - by wordlist index (incr)
+	#    c - by diameter (incr)
+	#    d - not specified
+	
+	(C, N) = eigenvectors.shape
+	x_entries = np.arange(C)
+	
+	# a: secondary sort by value
+	for n in range(N):		# nth eigenvector
+		ya_entries = eigenvectors[np.lexsort((np.arange(C), eigenvectors[:,n], cluster_labels)), n]
+		plot_as_specified(x_entries, ya_entries, 'blue', output_dir + algorithm + ".eig" + str(n) + "._value" + timestamp_string, scatter=True)
+		print(np.lexsort((np.arange(C), eigenvectors[:,n], cluster_labels)))
+		
+	# b: secondary sort by wordlist index	[compute order once, same for all eigs; similarly for c and d below]
+	pointers_b = np.lexsort((np.arange(C), cluster_labels))
+	print("pointers_b:  ", pointers_b)
+	for n in range(N):
+		yb_entries = eigenvectors[pointers_b, n]
+		plot_as_specified(x_entries, yb_entries, 'green', output_dir + algorithm + ".eig" + str(n) + "._index" + timestamp_string, scatter=True)
+		
+	# c: secondary sort by diameter
+	pointers_c = np.lexsort((diameter, cluster_labels))
+	print("pointers_c:  ", pointers_c)
+	for n in range(N):
+		yc_entries = eigenvectors[pointers_c, n]
+		plot_as_specified(x_entries, yc_entries, 'goldenrod', output_dir + algorithm + ".eig" + str(n) + "._diam" + timestamp_string, scatter=True)
+		
+	# d: secondary sort not specified  - what is the order, and why do we see structure??
+	pointers_d = np.argsort(cluster_labels)
+	print("pointers_d:  ", pointers_d)
+	for n in range(N):
+		yd_entries = eigenvectors[pointers_d, n]
+		plot_as_specified(x_entries, yd_entries, 'red', output_dir + algorithm + ".eig" + str(n) + ".__" + timestamp_string, scatter=True)
+		
+	
+	# 2d CLUSTER PLOT     may want to pass in number of clusters   use K sim to C, N
+	K = N	# K is number of clusters. num_clusters same as num_eigenvectors for initial development, but not necessary.
+	LUT = [
+	'#646464',    #nice charcoal
+	'#96addb',    #blue violet
+	'#00ff00',    #lime   #Try lime instead  If good, change here and at Google Sheets  '#c0c0c0',    #silver
+	'#ff00ff',    #fuchsia
+	'#2c8840',    #deeper green
+	'#5ed1b7',    #nice aqua
+	'#0000ff',  #blue
+	'#ffff00',  #yellow
+	'#00ffff',  #aqua
+	'#800000',  #maroon
+	'#008000',  #green
+	'#6666ff',  #was navy  #000080
+	'#808000',  #olive
+	'#800080',  #purple
+	'#008080',  #teal
+	'#808080',  #gray
+	'#c0c0c0',  #silver	 #Switched positions of lime and silver because silver didn't show up well on plots  '#00ff00',  #lime
+	'#d15eb7',
+	'#2c5088',
+	'#004040',
+	'#400040',
+	#'#ff0000',  #red
+	#'#fa3fc9',  #pinker fuchsia
+	]
+	
+	
+	# copied from "plot_as_specified"
+	fig, ax = plt.subplots()
+	title_string = output_dir + algorithm + ".2dClusters" + timestamp_string
+	plt.title(title_string)
+	#if not ylimits==None:    Work on this  -- for outliers
+	#	plt.ylim(ylimits)
+	
+	
+	for k in range(K):
+		print("Cluster " + str(k))
+		pointers_clstr = np.asarray([ptr for ptr in pointers_b if cluster_labels[ptr]==k])
+		print(pointers_clstr)
+		print("length of pointers_clstr =", len(pointers_clstr))	# number of elts of Cluster k
+		# so far, so good !
+		
+		x_coords = eigenvectors[pointers_clstr, 1]   # coords in wordlist order on eig1 for Cluster k 
+		y_coords = eigenvectors[pointers_clstr, 2]   # in wordlist order on eig2
+		ax.scatter(x_coords, y_coords, marker='.', s=1, color=LUT[k])   # Note: s is special parameter for scatter function (in points^^2 float)
+		#plot_as_specified(x_coords, y_coords, LUT[k], output_dir + algorithm + ".2dCluster" + str(k) + timestamp_string, scatter=True)
+		
+	fig.savefig(title_string + ".png")
+	plt.close(fig)
+
+
+
+def NOT_NOW_eigenvector_clusterwise_plots(algorithm, eigenvectors, cluster_labels, diameter, output_dir, timestamp_string):
+	# SEE Worksheet3 in generate_eigenvector_spreadsheet()
+	(C, N) = eigenvectors.shape
+	
+	## SORT EACH EIGENVECTOR FIRST BY CLUSTER, THEN BY COORD VALUE (INCREASING), USING LEXSORT
+	#lex_sortation = np.ones((C,N), dtype=int)        # C x N matrix  
+	#lex_sortation_rel = np.ones((C,N), dtype=int)    # C x N matrix     disregard leftmost column
+	
+	#for n in range(N):
+	#	lex_sortation[:,n] = np.lexsort((np.arange(C), eigenvectors[:,n], cluster_labels))
+		
+	#for n in range(1,N):
+		#lex_sortation_rel[:,n] = np.lexsort((diameter, eig_rel[:,n], cluster_labels))
+		
+		
+	# On each eigenvector, sort entries
+	#    a - by cluster (incr)
+	# then within each cluster
+	#    b - by value (incr)
+	#    c - by wordlist index (decr)
+	#    d - by diameter (incr)
+	
+	# Possible to do this more efficiently. For a,c,d, index order determined by lexsort is same across all eigenvectors.
+	# May do with top level the type of sort, for each eigenvector.
+	
+	x_entries = np.arange(C)
+	for n in range(N):		# nth eigenvector
+		ya_entries = eigenvectors[np.argsort(cluster_labels), n]
+		plot_as_specified(x_entries, ya_entries, 'r', output_dir + algorithm + ".eig._." + str(n) + timestamp_string, scatter=True)
+		#print(np.argsort(cluster_labels))
+		
+		yb_entries = eigenvectors[np.lexsort((np.arange(C), eigenvectors[:,n], cluster_labels)), n]
+		#yb_entries = eigenvectors[lex_sortation[:,n], n]    # condense from above
+		plot_as_specified(x_entries, yb_entries, 'b', output_dir + algorithm + ".eig._value" + str(n) + timestamp_string, scatter=True)
+		#print(np.lexsort((np.arange(C), eigenvectors[:,n], cluster_labels)))
+		
+		yc_entries = eigenvectors[np.lexsort((np.arange(C), cluster_labels)), n]    # for decreasing order, use no,arange(C)[::-1]
+		plot_as_specified(x_entries, yc_entries, 'g', output_dir + algorithm + ".eig._index." + str(n) + timestamp_string, scatter=True)
+		#print(np.lexsort((np.arange(C)[::-1], cluster_labels)))
+		
+		yd_entries = eigenvectors[np.lexsort((diameter, cluster_labels)), n]
+		plot_as_specified(x_entries, yd_entries, 'goldenrod', output_dir + algorithm + ".eig._diam." + str(n) + timestamp_string, scatter=True)
+		#print(np.lexsort((diameter, cluster_labels)))
+		
+	# CLUSTER PLOT   Need to work on this to get colors.
+	if (N>2):
+		x_coords = eigenvectors[:,1]
+		y_coords = eigenvectors[:,2]
+		plot_as_specified(x_coords, y_coords, 'magenta', output_dir + algorithm + ".2d" + timestamp_string, scatter=True)
+		
+		
+		
+		
+		
+		
+
+
+
 def eigenvector_plots(wordlist, eigenvectors, timestamp_string):
 	(C, N) = eigenvectors.shape        # YES! Use this elsewhere also
 	#print("C =", C, " and N =", N)
@@ -2872,10 +3023,12 @@ def run(unigram_counter=None, bigram_counter=None, trigram_counter=None,
     wordcoords_sym, clusterlabels_sym, clustercenters_sym = spectral_clustering_sym(eigenvectors, random_seed=1)
     generate_eigenvector_spreadsheet('sym', wordcoords_sym, clusterlabels_sym, clustercenters_sym,
                                      wordlist, diameter, output_dir, timestamp_string)
+    eigenvector_clusterwise_plots('sym', wordcoords_sym, clusterlabels_sym, diameter, output_dir, timestamp_string)
     
     wordcoords_rw, clusterlabels_rw, clustercenters_rw = spectral_clustering_rw(eigenvectors, sqrt_diam, random_seed=1)
     generate_eigenvector_spreadsheet('rw', wordcoords_rw, clusterlabels_rw, clustercenters_rw,
                                      wordlist, diameter, output_dir, timestamp_string)
+    eigenvector_clusterwise_plots('rw', wordcoords_rw, clusterlabels_rw, diameter, output_dir, timestamp_string)                                 
     
     raise SystemExit    # October 26, 2018
     
