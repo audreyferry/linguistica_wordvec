@@ -2695,14 +2695,15 @@ def discretize(vectors, alg_id, common_data_for_spreadsheets, copy=True, max_svd
 	return t_continuous, labels
 	
 	
-def spectral_clustering_menu(eigenvectors, common_data_for_spreadsheets, random_seed=None):
+def spectral_clustering_menu(eigenvectors, eigenvalues, common_data_for_spreadsheets, random_seed=None):
 	# For any matrix named as eigenvectors_xxx in this program, 
     # each column is an eigenvector of some particular sort of laplacian
     #               (or the result of an operation on these eigenvectors)
     # each row represents a word as a tuple in that coordinate system
     
+    # THINGS TO KEEP IN MIND
     # weighted k-means
-    # any other weighting scheme
+    # any other weighting scheme; rescaling eigenvectors
     # regularize
     # nonnegative constraint
     # data spectroscopy
@@ -2727,7 +2728,42 @@ def spectral_clustering_menu(eigenvectors, common_data_for_spreadsheets, random_
 	eigenvectors_sym_rw_unitrows = eigenvectors_unitrows		# normalizing rows of e-vectors_sym and e-vectors_rw gives same entries
 	eigenvectors_rw_1          = skl_normalize(eigenvectors_rw, norm='l2', axis=0)
 	eigenvectors_rw_1_unitrows = skl_normalize(eigenvectors_rw_1, norm='l2', axis=1)
+	
+	# This section is specifically for diffusion clustering.
+	# For now, start from laplacian. In future work directly from affinity matrix.
+	diffusion_embedding_rw = np.empty_like(eigenvectors_rw)			# init
+	diffusion_eigenvalues = np.ones_like(eigenvalues) - eigenvalues
+	print("\neigenvalues:", eigenvalues)
+	print("diffusion_eigenvalues:", diffusion_eigenvalues)
+	
+	num_timesteps = 1    # 5 timesteps, 12 eigs   usually 1    3   20    30
+	timestep_coeffs = np.zeros((num_timesteps, N))   # can I specify format? 
+	timestep_coeffs[0, :] = diffusion_eigenvalues
+	for i in range(1, num_timesteps):
+		timestep_coeffs[i, :] = timestep_coeffs[i-1, :] * diffusion_eigenvalues		# element-wise
+		print("\n", timestep_coeffs[i, :])
 
+	
+	#diffusion_embedding_rw = eigenvectors_rw @ np.diag(diffusion_eigenvalues)		# 1 timestep
+	#diffusion_embedding_rw_1 = eigenvectors_rw_1 @ np.diag(diffusion_eigenvalues)
+	
+	diffusion_embedding_rw = eigenvectors_rw @ np.diag(timestep_coeffs[num_timesteps-1, :])		# 5 timesteps  then 10 timesteps
+	diffusion_embedding_rw_1 = eigenvectors_rw_1 @ np.diag(timestep_coeffs[num_timesteps-1, :])
+	
+	print("\neigenvectors_rw:")
+	print(eigenvectors_rw[0:5, :])
+	print("\ndiffusion_embedding_rw")
+	print(diffusion_embedding_rw[0:5, :])    # first 5 words
+	print("\n")
+		
+	print("\neigenvectors_rw_1:")
+	print(eigenvectors_rw_1[0:5, :])
+	print("\ndiffusion_embedding_rw_1")
+	print(diffusion_embedding_rw_1[0:5, :])
+	print("\n")
+	
+	# raise SystemExit    # March 7, 2019
+	
 	
 	# CLUSTERING ALGORITHMS 
 	###################################################################################
@@ -2736,43 +2772,66 @@ def spectral_clustering_menu(eigenvectors, common_data_for_spreadsheets, random_
 	# rw unit rows not needed: same as sym unit rows.                                  DO WE NEED TO MAKE COPIES? (see def discretize)
 	###################################################################################
 	
-	kmeans_clustering_sym_rw_unitrows = sklearn.cluster.KMeans(n_clusters=N, random_state=random_seed).fit(eigenvectors_sym_rw_unitrows)
-	clusterlabels_sym_rw_unitrows  = kmeans_clustering_sym_rw_unitrows.labels_
-	clustercenters_sym_rw_unitrows = kmeans_clustering_sym_rw_unitrows.cluster_centers_
-	generate_eigenvector_spreadsheet('kmeans.sym_rw_unitrows', eigenvectors_sym_rw_unitrows, clusterlabels_sym_rw_unitrows, clustercenters_sym_rw_unitrows, common_data_for_spreadsheets)
+	#kmeans_clustering
+	nreq_clusters = 9		# N  3  8  9  11  15  19  # should eventually be a user parameter setting
 	
-	kmeans_clustering_rw = sklearn.cluster.KMeans(n_clusters=N, random_state=random_seed).fit(eigenvectors_rw)
-	clusterlabels_rw  = kmeans_clustering_rw.labels_
-	clustercenters_rw = kmeans_clustering_rw.cluster_centers_
-	generate_eigenvector_spreadsheet('kmeans.rw', eigenvectors_rw, clusterlabels_rw, clustercenters_rw, common_data_for_spreadsheets)
+	diffusion_kmeans_clustering_rw = sklearn.cluster.KMeans(n_clusters=nreq_clusters, random_state=random_seed).fit(diffusion_embedding_rw)
+	diffusion_clusterlabels_rw  = diffusion_kmeans_clustering_rw.labels_
+	diffusion_clustercenters_rw = diffusion_kmeans_clustering_rw.cluster_centers_
+	generate_eigenvector_spreadsheet('diffusion_kmeans.rw', diffusion_embedding_rw, nreq_clusters, diffusion_clusterlabels_rw, diffusion_clustercenters_rw, common_data_for_spreadsheets)
 	
-	kmeans_clustering_rw_1 = sklearn.cluster.KMeans(n_clusters=N, random_state=random_seed).fit(eigenvectors_rw_1)
-	clusterlabels_rw_1  = kmeans_clustering_rw_1.labels_
-	clustercenters_rw_1 = kmeans_clustering_rw_1.cluster_centers_
-	generate_eigenvector_spreadsheet('kmeans.rw_1', eigenvectors_rw_1, clusterlabels_rw_1, clustercenters_rw_1, common_data_for_spreadsheets)
+	diffusion_kmeans_clustering_rw_1 = sklearn.cluster.KMeans(n_clusters=nreq_clusters, random_state=random_seed).fit(diffusion_embedding_rw_1)
+	diffusion_clusterlabels_rw_1  = diffusion_kmeans_clustering_rw_1.labels_
+	diffusion_clustercenters_rw_1 = diffusion_kmeans_clustering_rw_1.cluster_centers_
+	generate_eigenvector_spreadsheet('diffusion_kmeans.rw_1', diffusion_embedding_rw_1, nreq_clusters, diffusion_clusterlabels_rw_1, diffusion_clustercenters_rw_1, common_data_for_spreadsheets)
 	
-	kmeans_clustering_rw_1_unitrows = sklearn.cluster.KMeans(n_clusters=N, random_state=random_seed).fit(eigenvectors_rw_1_unitrows)
-	clusterlabels_rw_1_unitrows  = kmeans_clustering_rw_1_unitrows.labels_
-	clustercenters_rw_1_unitrows= kmeans_clustering_rw_1_unitrows.cluster_centers_
-	generate_eigenvector_spreadsheet('kmeans.rw_1_unitrows',  eigenvectors_rw_1_unitrows, clusterlabels_rw_1_unitrows, clustercenters_rw_1_unitrows, common_data_for_spreadsheets)
+	#kmeans_clustering_sym_rw_unitrows = sklearn.cluster.KMeans(n_clusters=nreq_clusters, random_state=random_seed).fit(eigenvectors_sym_rw_unitrows)
+	#clusterlabels_sym_rw_unitrows  = kmeans_clustering_sym_rw_unitrows.labels_
+	#clustercenters_sym_rw_unitrows = kmeans_clustering_sym_rw_unitrows.cluster_centers_
+	#generate_eigenvector_spreadsheet('kmeans.sym_rw_unitrows', eigenvectors_sym_rw_unitrows, nreq_clusters, clusterlabels_sym_rw_unitrows, clustercenters_sym_rw_unitrows, common_data_for_spreadsheets)
+	
+	#kmeans_clustering_rw = sklearn.cluster.KMeans(n_clusters=nreq_clusters, random_state=random_seed).fit(eigenvectors_rw)
+	#clusterlabels_rw  = kmeans_clustering_rw.labels_
+	#clustercenters_rw = kmeans_clustering_rw.cluster_centers_
+	#generate_eigenvector_spreadsheet('kmeans.rw', eigenvectors_rw, nreq_clusters, clusterlabels_rw, clustercenters_rw, common_data_for_spreadsheets)
+	
+	#kmeans_clustering_rw_1 = sklearn.cluster.KMeans(n_clusters=nreq_clusters, random_state=random_seed).fit(eigenvectors_rw_1)
+	#clusterlabels_rw_1  = kmeans_clustering_rw_1.labels_
+	#clustercenters_rw_1 = kmeans_clustering_rw_1.cluster_centers_
+	#generate_eigenvector_spreadsheet('kmeans.rw_1', eigenvectors_rw_1, nreq_clusters, clusterlabels_rw_1, clustercenters_rw_1, common_data_for_spreadsheets)
+	
+	#kmeans_clustering_rw_1_unitrows = sklearn.cluster.KMeans(n_clusters=nreq_clusters, random_state=random_seed).fit(eigenvectors_rw_1_unitrows)
+	#clusterlabels_rw_1_unitrows  = kmeans_clustering_rw_1_unitrows.labels_
+	#clustercenters_rw_1_unitrows= kmeans_clustering_rw_1_unitrows.cluster_centers_
+	#generate_eigenvector_spreadsheet('kmeans.rw_1_unitrows',  eigenvectors_rw_1_unitrows, nreq_clusters, clusterlabels_rw_1_unitrows, clustercenters_rw_1_unitrows, common_data_for_spreadsheets)
 		
 	
 	###################################################################################
 	# discretize                check code carefully against algorithm in paper
-	# Iteration within this algorithm begins with a matrix with rows of length one8
+	# Iteration within this algorithm begins with a matrix with rows of length one
 	# (derived from a laplacian eigenvector matrix). To enforce this, the first step
 	# in the discretize() code (obtained from sklearn) is to row-normalize the input.  
 	# For insurance, we retain this line, noting here that using either a given 
 	# eigenvector matrix or its row-normalized form as input produces the same result.	 
 	###################################################################################
+	#nreq_clusters = N
 	
-	rotated_vectors_sym_rw_unitrows, clusterlabels_sym_rw_unitrows = discretize(eigenvectors_sym_rw_unitrows, 'discretize_LOG.sym_rw_unitrows', common_data_for_spreadsheets, random_state=random_seed, log=True)
-	generate_eigenvector_spreadsheet('discretize.sym_rw_unitrows', rotated_vectors_sym_rw_unitrows, clusterlabels_sym_rw_unitrows, clustercenters_placeholder, common_data_for_spreadsheets)
+	# NOT YET TRIED
+	#diffusion_discr_rot_rw, diffusion_discr_clusterlabels_rw = discretize(diffusion_embedding_rw, 'discretize_LOG.sym_rw_unitrows', common_data_for_spreadsheets, random_state=random_seed, log=False)
+	#generate_eigenvector_spreadsheet('diffusion_discr_rw', diffusion_discr_rot_rw, nreq_clusters, diffusion_discr_clusterlabels_rw, clustercenters_placeholder, common_data_for_spreadsheets)
 	
-	rotated_vectors_rw_1_unitrows, clusterlabels_rw_1_unitrows = discretize(eigenvectors_rw_1_unitrows, 'discretize_LOG.rw_1_unitrows', common_data_for_spreadsheets, random_state=random_seed, log=True)
-	generate_eigenvector_spreadsheet('discretize.rw_1_unitrows', rotated_vectors_rw_1_unitrows, clusterlabels_rw_1_unitrows, clustercenters_placeholder, common_data_for_spreadsheets)
+	#diffusion_discr_rot_rw_1, diffusion_discr_clusterlabels_rw_1 = discretize(diffusion_embedding_rw_1, 'discretize_LOG.sym_rw_unitrows', common_data_for_spreadsheets, random_state=random_seed, log=False)
+	#generate_eigenvector_spreadsheet('diffusion_discr_rw_1', diffusion_discr_rot_rw_1, nreq_clusters, diffusion_discr_clusterlabels_rw_1, clustercenters_placeholder, common_data_for_spreadsheets)
 	
-
+	
+	#rotated_vectors_sym_rw_unitrows, clusterlabels_sym_rw_unitrows = discretize(eigenvectors_sym_rw_unitrows, 'discretize_LOG.sym_rw_unitrows', common_data_for_spreadsheets, random_state=random_seed, log=False)
+	#generate_eigenvector_spreadsheet('discretize.sym_rw_unitrows', rotated_vectors_sym_rw_unitrows, nreq_clusters, clusterlabels_sym_rw_unitrows, clustercenters_placeholder, common_data_for_spreadsheets)
+	
+	#rotated_vectors_rw_1_unitrows, clusterlabels_rw_1_unitrows = discretize(eigenvectors_rw_1_unitrows, 'discretize_LOG.rw_1_unitrows', common_data_for_spreadsheets, random_state=random_seed, log=False)
+	#generate_eigenvector_spreadsheet('discretize.rw_1_unitrows', rotated_vectors_rw_1_unitrows, nreq_clusters, clusterlabels_rw_1_unitrows, clustercenters_placeholder, common_data_for_spreadsheets)
+	
+	
+# This function no longer called directly. Covered instead by code inside "spectral_clustering_menu()"
 def spectral_clustering_sym(eigenvectors, common_data_for_spreadsheets, assign_labels='kmeans', random_seed=None):
 	# For any matrix named as eigenvectors_xxx in this program, 
     #  each column is an eigenvector of some particular sort of laplacian
@@ -2800,6 +2859,7 @@ def spectral_clustering_sym(eigenvectors, common_data_for_spreadsheets, assign_l
     return wordcoords_sym, clusterlabels, clustercenters
     
     
+# This function no longer called directly. Covered instead by code inside "spectral_clustering_menu()"
 def spectral_clustering_rw(eigenvectors, sqrt_diam, common_data_for_spreadsheets, assign_labels='kmeans', random_seed=None):
 	# For any matrix named as eigenvectors_xxx in this program, 
     #  each column is an eigenvector of some particular sort of laplacian
@@ -2843,7 +2903,7 @@ def sk_lifted_spectral_clustering(affinity_matrix, num_eigenvectors, num_cluster
 	##################################################### DECIDED THAT INTENT IS UNIT VECTORS   Oct. 12, 2018	
 	
 	# Our affinity matrix  scm_csr  is sparse.  Returns laplacian as a numpy (dense) array. 
-	# I'd rather give it dense affinity.  But try with sparse, since there was an issue needing np.asarrau
+	# I'd rather give it dense affinity.  But try with sparse, since there was an issue needing np.asarray
 	laplacian, dd = csgraph_laplacian(affinity_matrix, normed=True, return_diag=True)   # returns L_sym
 	laplacian_sparse = sparse.csr_matrix(laplacian)
 	eigenvalues, eigenvectors = linalg.eigsh(laplacian_sparse, k=num_eigenvectors, which='SM')  #N.B. eigs complex; eigsh not
@@ -2869,8 +2929,8 @@ def sk_lifted_spectral_clustering(affinity_matrix, num_eigenvectors, num_cluster
 	return eigenvectors, cluster_labels, cluster_centers    # CONDENSE THIS
 	
 
-#def generate_eigenvector_spreadsheet(algorithm, eigenvectors, cluster_labels, cluster_centers, wordlist, diameter, output_dir, timestamp_string):
-def generate_eigenvector_spreadsheet(alg_id, eig_input, cluster_labels, cluster_centers, common_data_for_spreadsheets):
+#def generate_eigenvector_spreadsheet(algorithm, eigenvectors, nreq_clusters, cluster_labels, cluster_centers, wordlist, diameter, output_dir, timestamp_string):
+def generate_eigenvector_spreadsheet(alg_id, eig_input, nreq_clusters, cluster_labels, cluster_centers, common_data_for_spreadsheets):
 	# Now handled through xlsxwriter
 	
 	# PRELIMINARIES
@@ -2879,7 +2939,8 @@ def generate_eigenvector_spreadsheet(alg_id, eig_input, cluster_labels, cluster_
 	output_dir = common_data_for_spreadsheets[2]
 	timestamp_string = common_data_for_spreadsheets[3]
 	
-	(C, N) = eig_input.shape         
+	(C, N) = eig_input.shape
+	print("In generate_eigenvector_spreadsheet, C = ", C, ",  N =", N)    
 	
 	#eig_rel = np.ones_like(eig_input)
 	#for k in range(N):
@@ -2887,7 +2948,7 @@ def generate_eigenvector_spreadsheet(alg_id, eig_input, cluster_labels, cluster_
 	
 	
 	# USING xlsxwriter
-	workbook = xlsxwriter.Workbook(output_dir + alg_id + ".eig_data.n=" + str(N) + timestamp_string + ".xlsx")
+	workbook = xlsxwriter.Workbook(output_dir + alg_id + ".eig_data.nreq=" + str(nreq_clusters) + ".n=" + str(N) + timestamp_string + ".xlsx")
 		
 	# THIS IS NEW  November 8, 2018
 	LUT = [
@@ -3037,9 +3098,10 @@ def generate_eigenvector_spreadsheet(alg_id, eig_input, cluster_labels, cluster_
 			
 	# Save the min and max values for eig_input to set up axes for plots in Worrksheet7
 	if N>1:
+		print("N =", N)
 		minindex_by_eig = lex_sortation[0,:]		# slices
 		maxindex_by_eig = lex_sortation[C-1,:]
-		print("nminindex_by_eig: ", minindex_by_eig)
+		print("minindex_by_eig: ", minindex_by_eig)
 		print("maxindex_by_eig: ", maxindex_by_eig)
 		#print("Eig1: ", eig_input[minindex_by_eig[1], 1], eig_input[maxindex_by_eig[1], 1])
 		#print("Eig2: ", eig_input[minindex_by_eig[2], 2], eig_input[maxindex_by_eig[2], 2])
@@ -3307,13 +3369,24 @@ def generate_eigenvector_spreadsheet(alg_id, eig_input, cluster_labels, cluster_
 	##############
 	## RECORD MEAN OF EACH CLUSTER'S COORD VALUES ON EACH EIGENVECTOR
 	cluster_ids, card_per_cluster = np.unique(cluster_labels, return_counts=True)
-	K = len(cluster_ids)   # Note cluster_ids may be a <<proper>> subset of cluster_labels 
+	J = len(cluster_ids)   # cluster_labels has length C. cluster_ids is a short list--the set from which the labels are drawn.
+	K = nreq_clusters
 	print("K =", K)
+	print("J =", J)
 	print("cluster_ids: ", cluster_ids)
 	print("card_per_cluster: ", card_per_cluster, "\n")
+	
+	if J==K:
+		padded_card_per_cluster = card_per_cluster
+	else:
+		padded_card_per_cluster = np.zeros(K)
+		for id in cluster_ids:
+			padded_card_per_cluster[id] = card_per_cluster[list(cluster_ids).index(id)]
+		
+	
 	# BE SURE COUNTS MATCH CATEGORIES IN ORDER   COULD COUNT AT SAME TIME AS SUM TO BE SURE
-	coord_sum_per_cluster_per_eigenvector  = np.zeros((N, N))		# WAS  np.zeros((K, N))
-	coord_mean_per_cluster_per_eigenvector = np.zeros((N, N))		# WAS  np.zeros((K, N))
+	coord_sum_per_cluster_per_eigenvector  = np.zeros((K, N))		# WAS  np.zeros((N, N))
+	coord_mean_per_cluster_per_eigenvector = np.zeros((K, N))		# WAS  np.zeros((N, N))
 	
 	for c in range(C):
 		for n in range(N):
@@ -3321,10 +3394,22 @@ def generate_eigenvector_spreadsheet(alg_id, eig_input, cluster_labels, cluster_
 			coord_sum_per_cluster_per_eigenvector[cluster_labels[c],n] = \
 				coord_sum_per_cluster_per_eigenvector[cluster_labels[c],n] + eig_input[c,n]
 				
-	for k in range(K):
+	#for k in range(K):     for j in cluster_ids 
+		#if k in cluster_ids:
+			#kindx = list(cluster_ids).index(k)
+			#print("k =", k, ",  kindx =", kindx)
+			
+			#for n in range(N):
+				#coord_mean_per_cluster_per_eigenvector[k,n] = \
+					#coord_sum_per_cluster_per_eigenvector[k,n] / card_per_cluster[kindx]
+					
+	for id in cluster_ids:
 		for n in range(N):
-			coord_mean_per_cluster_per_eigenvector[cluster_ids[k],n] = \
-				coord_sum_per_cluster_per_eigenvector[cluster_ids[k],n] / card_per_cluster[k]
+			coord_mean_per_cluster_per_eigenvector[id,n] = \
+				coord_sum_per_cluster_per_eigenvector[id,n] / padded_card_per_cluster[id]
+#			
+#				coord_mean_per_cluster_per_eigenvector[cluster_ids[k],n] = \
+#					coord_sum_per_cluster_per_eigenvector[cluster_ids[k],n] / card_per_cluster[k]
 				
 
 	## XlsxWriter instructions
@@ -3337,8 +3422,8 @@ def generate_eigenvector_spreadsheet(alg_id, eig_input, cluster_labels, cluster_
 	for n, col in zip(range(N), range(1, N+1)):
 		worksheet7.write(3, col, 'Eig'+str(n), bold)
 		
-	## Data 
-	for m, row in zip(range(N), range(4, 4+N)):
+	## Data   # EASIER TO INCLUDE ROW FOR EMPTY CLUSTER THAN TO EXCLUDE ITS LABEL AND ADJUST ROWS FOR REMAINING LABELS 
+	for m, row in zip(range(K), range(4, 4+K)):              # DO NOT USE J ON THIS LINE. 
 		worksheet7.write(row, 0, 'Cluster'+str(m), bold)
 		for n, col in zip(range(N), range(1, N+1)):
 			worksheet7.write(row, col, coord_mean_per_cluster_per_eigenvector[m,n], float_format)
@@ -3353,7 +3438,7 @@ def generate_eigenvector_spreadsheet(alg_id, eig_input, cluster_labels, cluster_
 		worksheet7.write(row+1, col, 'Eig'+str(n), bold)
 			
 	## Data
-	for m, row in zip(range(K), range(7+N, 7+2*N)):
+	for m, row in zip(range(K), range(7+K, 7+2*K)):
 		worksheet7.write(row, 0, 'Cluster'+str(m), bold)
 		for n, col in zip(range(N), range(1, N+1)):
 			worksheet7.write(row, col, cluster_centers[m,n], float_format)
@@ -3386,17 +3471,28 @@ def generate_eigenvector_spreadsheet(alg_id, eig_input, cluster_labels, cluster_
 		cluster_chart_2d.set_y_axis({'major_gridlines': {'visible': False}})
 		
 		
+		#rowbase = 0
+		#for k in range(K):    # for each cluster
+			#cluster_chart_2d.add_series({
+				#'categories': ['cluster.wordlist index', rowbase+1, 3+5*heig,  rowbase + card_per_cluster[k], 3+5*heig],
+				#'values':     ['cluster.wordlist index', rowbase+1, 3+5*veig,  rowbase + card_per_cluster[k], 3+5*veig],
+				#'marker':     {'type': 'short_dash', 'size': 9, 'border': {'color': LUT[cluster_ids[k]]}, 'fill': {'color': LUT[cluster_ids[k]]}},
+				#'x_axis':     {'num_format': 0x02},
+			#})
+			#rowbase = rowbase + card_per_cluster[k]
+			
 		rowbase = 0
-		for k in range(K):    # for each cluster
+		for id in cluster_ids:
 			cluster_chart_2d.add_series({
-				'categories': ['cluster.wordlist index', rowbase+1, 3+5*heig,  rowbase + card_per_cluster[k], 3+5*heig],
-				'values':     ['cluster.wordlist index', rowbase+1, 3+5*veig,  rowbase + card_per_cluster[k], 3+5*veig],
-				'marker':     {'type': 'short_dash', 'size': 9, 'border': {'color': LUT[cluster_ids[k]]}, 'fill': {'color': LUT[cluster_ids[k]]}},
+				'categories': ['cluster.wordlist index', rowbase+1, 3+5*heig,  rowbase + padded_card_per_cluster[id], 3+5*heig],
+				'values':     ['cluster.wordlist index', rowbase+1, 3+5*veig,  rowbase + padded_card_per_cluster[id], 3+5*veig],
+				'marker':     {'type': 'short_dash', 'size': 9, 'border': {'color': LUT[id]}, 'fill': {'color': LUT[id]}},
 				'x_axis':     {'num_format': 0x02},
 			})
-			rowbase = rowbase + card_per_cluster[k]
+			rowbase = rowbase + padded_card_per_cluster[id]	
 			
 		worksheet7.insert_chart(7 + 2*K + (n-1)*15, 1, cluster_chart_2d)
+		#worksheet7.insert_chart(7+N+K + (n-1)*15, 1, cluster_chart_2d)
 		
 	
 	# Plots with heig always Eig0   starting with Eig0 x Eig2, since we already have Eig0 x Eig1
@@ -3425,17 +3521,28 @@ def generate_eigenvector_spreadsheet(alg_id, eig_input, cluster_labels, cluster_
 		cluster_chart_2d.set_y_axis({'major_gridlines': {'visible': False}})
 		
 		
+		#rowbase = 0
+		#for k in range(K):    # for each cluster
+			#cluster_chart_2d.add_series({
+				#'categories': ['cluster.wordlist index', rowbase+1, 3+5*heig,  rowbase + card_per_cluster[k], 3+5*heig],
+				#'values':     ['cluster.wordlist index', rowbase+1, 3+5*veig,  rowbase + card_per_cluster[k], 3+5*veig],
+				#'marker':     {'type': 'short_dash', 'size': 9, 'border': {'color': LUT[cluster_ids[k]]}, 'fill': {'color': LUT[cluster_ids[k]]}},
+				#'x_axis':     {'num_format': 0x02},
+			#})
+			#rowbase = rowbase + card_per_cluster[k]
+			
 		rowbase = 0
-		for k in range(K):    # for each cluster
+		for id in cluster_ids:
 			cluster_chart_2d.add_series({
-				'categories': ['cluster.wordlist index', rowbase+1, 3+5*heig,  rowbase + card_per_cluster[k], 3+5*heig],
-				'values':     ['cluster.wordlist index', rowbase+1, 3+5*veig,  rowbase + card_per_cluster[k], 3+5*veig],
-				'marker':     {'type': 'short_dash', 'size': 9, 'border': {'color': LUT[cluster_ids[k]]}, 'fill': {'color': LUT[cluster_ids[k]]}},
+				'categories': ['cluster.wordlist index', rowbase+1, 3+5*heig,  rowbase + padded_card_per_cluster[id], 3+5*heig],
+				'values':     ['cluster.wordlist index', rowbase+1, 3+5*veig,  rowbase + padded_card_per_cluster[id], 3+5*veig],
+				'marker':     {'type': 'short_dash', 'size': 9, 'border': {'color': LUT[id]}, 'fill': {'color': LUT[id]}},
 				'x_axis':     {'num_format': 0x02},
 			})
-			rowbase = rowbase + card_per_cluster[k]
-			
+			rowbase = rowbase + padded_card_per_cluster[id]
+		
 		worksheet7.insert_chart(7 + 2*K + (n-1)*15, 9, cluster_chart_2d)
+		#worksheet7.insert_chart(7+N+K + (n-1)*15, 9, cluster_chart_2d)
 		
 	
 	# Plots with heig always Eig1   starting with Eig1 x Eig3, since we already have Eig1 x Eig2
@@ -3464,17 +3571,28 @@ def generate_eigenvector_spreadsheet(alg_id, eig_input, cluster_labels, cluster_
 		cluster_chart_2d.set_y_axis({'major_gridlines': {'visible': False}})
 		
 		
+		#rowbase = 0
+		#for k in range(K):    # for each cluster
+			#cluster_chart_2d.add_series({
+				#'categories': ['cluster.wordlist index', rowbase+1, 3+5*heig,  rowbase + card_per_cluster[k], 3+5*heig],
+				#'values':     ['cluster.wordlist index', rowbase+1, 3+5*veig,  rowbase + card_per_cluster[k], 3+5*veig],
+				#'marker':     {'type': 'short_dash', 'size': 9, 'border': {'color': LUT[cluster_ids[k]]}, 'fill': {'color': LUT[cluster_ids[k]]}},
+				#'x_axis':     {'num_format': 0x02},
+			#})
+			#rowbase = rowbase + card_per_cluster[k]
+			
 		rowbase = 0
-		for k in range(K):    # for each cluster
+		for id in cluster_ids:
 			cluster_chart_2d.add_series({
-				'categories': ['cluster.wordlist index', rowbase+1, 3+5*heig,  rowbase + card_per_cluster[k], 3+5*heig],
-				'values':     ['cluster.wordlist index', rowbase+1, 3+5*veig,  rowbase + card_per_cluster[k], 3+5*veig],
-				'marker':     {'type': 'short_dash', 'size': 9, 'border': {'color': LUT[cluster_ids[k]]}, 'fill': {'color': LUT[cluster_ids[k]]}},
+				'categories': ['cluster.wordlist index', rowbase+1, 3+5*heig,  rowbase + padded_card_per_cluster[id], 3+5*heig],
+				'values':     ['cluster.wordlist index', rowbase+1, 3+5*veig,  rowbase + padded_card_per_cluster[id], 3+5*veig],
+				'marker':     {'type': 'short_dash', 'size': 9, 'border': {'color': LUT[id]}, 'fill': {'color': LUT[id]}},
 				'x_axis':     {'num_format': 0x02},
 			})
-			rowbase = rowbase + card_per_cluster[k]
-			
+			rowbase = rowbase + padded_card_per_cluster[id]
+		
 		worksheet7.insert_chart(7 + 2*K + (n-1)*15, 17, cluster_chart_2d)
+		#worksheet7.insert_chart(7+N+K + (n-1)*15, 17, cluster_chart_2d)
 		
 
 	
@@ -3652,7 +3770,17 @@ def basic_data_for_excel(wordlist, eigenvectors, atoms, header, alg_label, times
 	#decomposition_ica(data_array, wordlist, timestamp)
 	
 	
-
+def check_eigen_match(laplacian, eigenvalues, eigenvectors):
+	#eig1 = eigenvectors[:, 1]
+	lapl_times_eigenvectors = laplacian @ eigenvectors
+	print("eigenvalues:", eigenvalues)
+	#print("eig1 =", eig1[0:5])
+	print("lambda0_times_eigenvector0 =", eigenvalues[0] * eigenvectors[0:6, 0])
+	print("lambda1_times_eigenvector1 =", eigenvalues[1] * eigenvectors[0:6, 1])
+	print("lambda2_times_eigenvector2 =", eigenvalues[2] * eigenvectors[0:6, 2])
+	print("laplacian_times_eigenvectors:")
+	print(lapl_times_eigenvectors[0:6, 0:3])
+	print("\n")
 
 
 
@@ -3723,7 +3851,7 @@ def run(unigram_counter=None, bigram_counter=None, trigram_counter=None,
     laplacian, sqrt_diam = csgraph_laplacian(shared_context_matrix, normed=True, return_diag=True)   # returns L_sym
     #laplacian, sqrt_diam = Chicago_get_laplacian(shared_context_matrix)
     diameter = np.square(sqrt_diam)		# ndarray
-    
+        
     eigenvalues, eigenvectors = linalg.eigsh(laplacian, k=n_eigenvectors, which='SM')  #N.B. eigs complex; eigsh not
     eigenvectors = (_deterministic_vector_sign_flip(eigenvectors.T)).T                 #standardization convention; no other effect
     
@@ -3735,12 +3863,12 @@ def run(unigram_counter=None, bigram_counter=None, trigram_counter=None,
     # Alternative algorithms  ref. Ulrike von Luxburg. A Tutorial on Spectral Clustering.
     # These alternatives are organized as separate functions for clarity and ease of separate modification.
     
-    spectral_clustering_menu(eigenvectors, common_data_for_spreadsheets, random_seed=1)
+    spectral_clustering_menu(eigenvectors, eigenvalues, common_data_for_spreadsheets, random_seed=1)
     # spectral_clustering_menu( ) replaces next several lines
     #
     #wordcoords_sym, clusterlabels_sym, clustercenters_sym = spectral_clustering_sym(eigenvectors, common_data_for_spreadsheets, assign_labels='kmeans', random_seed=1)
     ##wordcoords_sym, clusterlabels_sym, clustercenters_sym = spectral_clustering_sym(eigenvectors, assign_labels='discretize', random_seed=1)
-    #enerate_eigenvector_spreadsheet('sym', wordcoords_sym, clusterlabels_sym, clustercenters_sym, common_data_for_spreadsheets)
+    #generate_eigenvector_spreadsheet('sym', wordcoords_sym, clusterlabels_sym, clustercenters_sym, common_data_for_spreadsheets)
     ##eigenvector_clusterwise_plots('sym', wordcoords_sym, clusterlabels_sym, diameter, output_dir, timestamp_string)
     
     #wordcoords_rw, clusterlabels_rw, clustercenters_rw = spectral_clustering_rw(eigenvectors, sqrt_diam, common_data_for_spreadsheets, assign_labels='kmeans', random_seed=1)
